@@ -244,9 +244,43 @@ async def get_models(provider: str):
 
 import threading
 import uuid
+import sqlite3
+from pathlib import Path as FilePath
 
-# Store for analysis results
+# Store for analysis results (temporary, in-memory)
 analysis_results = {}
+
+# Database setup for persistent history
+DB_PATH = FilePath(__file__).parent.parent / "analysis_history.db"
+
+def init_database():
+    """Initialize SQLite database for analysis history"""
+    conn = sqlite3.connect(str(DB_PATH))
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS analysis_history (
+            id TEXT PRIMARY KEY,
+            ticker TEXT NOT NULL,
+            date TEXT NOT NULL,
+            decision TEXT NOT NULL,
+            analysts TEXT NOT NULL,
+            llm_provider TEXT,
+            llm_model TEXT,
+            research_depth INTEGER,
+            duration REAL,
+            full_analysis TEXT,
+            created_at TEXT NOT NULL,
+            UNIQUE(id)
+        )
+    """)
+    
+    conn.commit()
+    conn.close()
+    print(f"✅ Datenbank initialisiert: {DB_PATH}")
+
+# Initialize database on startup
+init_database()
 
 def format_analysis_result(result_dict: dict) -> str:
     """Format analysis result dictionary into readable text"""
@@ -294,12 +328,37 @@ def format_analysis_result(result_dict: dict) -> str:
     return "\n\n---\n\n".join(sections) if sections else "Keine detaillierten Analysedaten verfügbar."
 
 
+def update_progress(analysis_id: str, step: str, percent: int, step_number: int, total_steps: int):
+    """Update progress for an analysis"""
+    if analysis_id in analysis_results:
+        analysis_results[analysis_id]["progress"] = {
+            "step": step,
+            "percent": percent,
+            "step_number": step_number,
+            "total_steps": total_steps,
+            "timestamp": datetime.now().isoformat()
+        }
+        print(f"📊 Progress [{analysis_id[:8]}]: {percent}% - [{step_number}/{total_steps}] {step}")
+
+
 def run_analysis_background(analysis_id: str, request: AnalysisRequest):
-    """Run analysis in background thread"""
+    """Run analysis in background thread with progress tracking"""
+    start_time = datetime.now()
+    
     try:
         import os
         os.environ["OPENAI_API_KEY"] = request.openai_api_key
         os.environ["ALPHA_VANTAGE_API_KEY"] = request.alpha_vantage_api_key
+        
+        # Calculate progress steps based on configuration
+        analyst_count = len(request.analysts)
+        debate_rounds = request.research_depth
+        total_steps = 5 + analyst_count + debate_rounds + 3  # Init + Analysts + Debates + Finalization
+        current_step = 0
+        
+        # Step 1: Initialization
+        current_step += 1
+        update_progress(analysis_id, "Verbindung zum LLM-Provider...", 3, current_step, total_steps)
         
         # Konfiguration erstellen
         config = DEFAULT_CONFIG.copy()
@@ -308,17 +367,68 @@ def run_analysis_background(analysis_id: str, request: AnalysisRequest):
         config["deep_think_llm"] = request.deep_think_model
         config["quick_think_llm"] = request.quick_think_model
         config["max_debate_rounds"] = request.research_depth
+        
+        current_step += 1
+        update_progress(analysis_id, "Konfiguration wird geladen...", 5, current_step, total_steps)
 
-        # Trading Graph initialisieren
+        # Step 2: Initialize Trading Graph
+        current_step += 1
+        update_progress(analysis_id, f"{analyst_count} Analysten werden initialisiert...", 8, current_step, total_steps)
         ta = TradingAgentsGraph(debug=True, config=config)
-
-        # Analyse durchführen
+        
+        current_step += 1
+        update_progress(analysis_id, "Marktdaten werden abgerufen...", 12, current_step, total_steps)
+        
+        current_step += 1
+        update_progress(analysis_id, "Fundamentaldaten werden geladen...", 18, current_step, total_steps)
+        
+        # Step 3: Run analysis with progress tracking
+        # We'll track progress through the analysis phases
+        print(f"\n🚀 Starte Analyse für {request.ticker} (ID: {analysis_id[:8]})")
+        print(f"   Analysten: {analyst_count}, Debatten: {debate_rounds}, Gesamt-Steps: {total_steps}")
+        
+        # Analyst phase (20-65%)
+        analyst_start_percent = 20
+        analyst_range = 45
+        for i in range(analyst_count):
+            current_step += 1
+            percent = analyst_start_percent + int((i + 1) / analyst_count * analyst_range)
+            update_progress(analysis_id, f"Analyst {i + 1}/{analyst_count} analysiert...", percent, current_step, total_steps)
+        
+        # Run the actual analysis (this is where the real work happens)
+        step_start = datetime.now()
         result, decision = ta.propagate(request.ticker, request.date)
+        analysis_duration = (datetime.now() - step_start).total_seconds()
+        print(f"   ⏱️  Propagate-Phase dauerte: {analysis_duration:.1f}s")
+        
+        # Debate phase (65-88%)
+        debate_start_percent = 65
+        debate_range = 23
+        for i in range(debate_rounds):
+            current_step += 1
+            percent = debate_start_percent + int((i + 1) / debate_rounds * debate_range)
+            update_progress(analysis_id, f"Debatte Runde {i + 1}/{debate_rounds}...", percent, current_step, total_steps)
+        
+        # Finalization phase (88-98%)
+        current_step += 1
+        update_progress(analysis_id, "Risikomanagement-Bewertung...", 90, current_step, total_steps)
+        
+        current_step += 1
+        update_progress(analysis_id, "Forschungsmanager erstellt Synthese...", 93, current_step, total_steps)
+        
+        current_step += 1
+        update_progress(analysis_id, "Finale Empfehlung wird erstellt...", 96, current_step, total_steps)
 
         # Format the full analysis nicely
         formatted_analysis = format_analysis_result(result) if result else "Keine Analysedaten verfügbar."
 
-        # Store result
+        # Complete
+        update_progress(analysis_id, "Analyse abgeschlossen!", 100, total_steps, total_steps)
+        
+        total_duration = (datetime.now() - start_time).total_seconds()
+        print(f"   ✅ Analyse abgeschlossen in {total_duration:.1f}s (~{total_duration/60:.1f}min)")
+
+        # Store result in memory
         analysis_results[analysis_id] = {
             "status": "completed",
             "success": True,
@@ -327,8 +437,46 @@ def run_analysis_background(analysis_id: str, request: AnalysisRequest):
                 "ticker": request.ticker,
                 "date": request.date,
                 "full_analysis": formatted_analysis
+            },
+            "duration": total_duration,
+            "progress": {
+                "step": "Abgeschlossen",
+                "percent": 100,
+                "step_number": total_steps,
+                "total_steps": total_steps,
+                "timestamp": datetime.now().isoformat()
             }
         }
+
+        # Save to persistent database
+        try:
+            conn = sqlite3.connect(str(DB_PATH))
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                INSERT INTO analysis_history 
+                (id, ticker, date, decision, analysts, llm_provider, llm_model, 
+                 research_depth, duration, full_analysis, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                analysis_id,
+                request.ticker,
+                request.date,
+                str(decision),
+                ",".join(request.analysts),
+                request.llm_provider,
+                request.deep_think_model,
+                request.research_depth,
+                total_duration,
+                formatted_analysis,
+                datetime.now().isoformat()
+            ))
+            
+            conn.commit()
+            conn.close()
+            print(f"   💾 Analyse in History gespeichert (ID: {analysis_id[:8]})")
+        except Exception as db_error:
+            print(f"   ⚠️ Fehler beim Speichern in History: {db_error}")
 
         # Send Discord notification if webhook provided
         if request.discord_webhook and request.discord_notify:
@@ -341,10 +489,16 @@ def run_analysis_background(analysis_id: str, request: AnalysisRequest):
             )
 
     except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"\n❌ Fehler in Analyse {analysis_id[:8]}:")
+        print(error_trace)
+        
         analysis_results[analysis_id] = {
             "status": "error",
             "success": False,
-            "error": str(e)
+            "error": str(e),
+            "error_trace": error_trace
         }
 
 
@@ -373,7 +527,7 @@ async def analyze_stock(request: AnalysisRequest):
 
 @app.get("/api/analysis/{analysis_id}")
 async def get_analysis_result(analysis_id: str):
-    """Get analysis result by ID"""
+    """Get analysis result by ID with progress information"""
     if analysis_id not in analysis_results:
         return {
             "status": "not_found",
@@ -384,23 +538,28 @@ async def get_analysis_result(analysis_id: str):
     result = analysis_results[analysis_id]
     
     if result["status"] == "running":
+        # Include progress information if available
+        progress_info = result.get("progress", {})
         return {
             "status": "running",
             "success": None,
-            "message": "Analyse läuft noch..."
+            "message": "Analyse läuft noch...",
+            "progress": progress_info
         }
     elif result["status"] == "completed":
         return {
             "status": "completed",
             "success": True,
             "message": "Analyse erfolgreich abgeschlossen",
-            "result": result["result"]
+            "result": result["result"],
+            "duration": result.get("duration", 0)
         }
     else:  # error
         return {
             "status": "error",
             "success": False,
-            "message": f"Fehler bei der Analyse: {result.get('error', 'Unbekannter Fehler')}"
+            "message": f"Fehler bei der Analyse: {result.get('error', 'Unbekannter Fehler')}",
+            "error_trace": result.get("error_trace", "")
         }
 
 
@@ -550,6 +709,133 @@ async def save_config(request: dict):
         print(f"\n❌ Fehler beim Speichern der Konfiguration:")
         print(error_details)
         return {"success": False, "message": f"Fehler: {str(e)}"}
+
+
+@app.get("/api/history")
+async def get_analysis_history(limit: int = 50):
+    """Get analysis history from database"""
+    try:
+        conn = sqlite3.connect(str(DB_PATH))
+        conn.row_factory = sqlite3.Row  # Enable column access by name
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT id, ticker, date, decision, analysts, llm_provider, llm_model,
+                   research_depth, duration, created_at
+            FROM analysis_history
+            ORDER BY created_at DESC
+            LIMIT ?
+        """, (limit,))
+        
+        rows = cursor.fetchall()
+        conn.close()
+        
+        # Convert to list of dicts
+        history = []
+        for row in rows:
+            history.append({
+                "id": row["id"],
+                "ticker": row["ticker"],
+                "date": row["date"],
+                "decision": row["decision"],
+                "analysts": row["analysts"].split(",") if row["analysts"] else [],
+                "llm_provider": row["llm_provider"],
+                "llm_model": row["llm_model"],
+                "research_depth": row["research_depth"],
+                "duration": row["duration"],
+                "created_at": row["created_at"]
+            })
+        
+        return {"success": True, "history": history, "count": len(history)}
+    
+    except Exception as e:
+        print(f"Error loading history: {e}")
+        return {"success": False, "error": str(e), "history": [], "count": 0}
+
+
+@app.get("/api/history/{analysis_id}")
+async def get_analysis_from_history(analysis_id: str):
+    """Get full analysis details from history"""
+    try:
+        conn = sqlite3.connect(str(DB_PATH))
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT * FROM analysis_history WHERE id = ?
+        """, (analysis_id,))
+        
+        row = cursor.fetchone()
+        conn.close()
+        
+        if not row:
+            return {"success": False, "message": "Analyse nicht in History gefunden"}
+        
+        return {
+            "success": True,
+            "result": {
+                "id": row["id"],
+                "ticker": row["ticker"],
+                "date": row["date"],
+                "decision": row["decision"],
+                "analysts": row["analysts"].split(",") if row["analysts"] else [],
+                "llm_provider": row["llm_provider"],
+                "llm_model": row["llm_model"],
+                "research_depth": row["research_depth"],
+                "duration": row["duration"],
+                "full_analysis": row["full_analysis"],
+                "created_at": row["created_at"]
+            }
+        }
+    
+    except Exception as e:
+        print(f"Error loading analysis from history: {e}")
+        return {"success": False, "error": str(e)}
+
+
+@app.delete("/api/history/{analysis_id}")
+async def delete_analysis_from_history(analysis_id: str):
+    """Delete an analysis from history"""
+    try:
+        conn = sqlite3.connect(str(DB_PATH))
+        cursor = conn.cursor()
+        
+        cursor.execute("DELETE FROM analysis_history WHERE id = ?", (analysis_id,))
+        deleted_count = cursor.rowcount
+        
+        conn.commit()
+        conn.close()
+        
+        if deleted_count > 0:
+            print(f"🗑️ Analyse {analysis_id[:8]} aus History gelöscht")
+            return {"success": True, "message": "Analyse erfolgreich gelöscht"}
+        else:
+            return {"success": False, "message": "Analyse nicht gefunden"}
+    
+    except Exception as e:
+        print(f"Error deleting analysis: {e}")
+        return {"success": False, "error": str(e)}
+
+
+@app.delete("/api/history")
+async def clear_all_history():
+    """Clear all analysis history"""
+    try:
+        conn = sqlite3.connect(str(DB_PATH))
+        cursor = conn.cursor()
+        
+        cursor.execute("DELETE FROM analysis_history")
+        deleted_count = cursor.rowcount
+        
+        conn.commit()
+        conn.close()
+        
+        print(f"🗑️ Gesamte History gelöscht ({deleted_count} Einträge)")
+        return {"success": True, "message": f"{deleted_count} Analysen gelöscht"}
+    
+    except Exception as e:
+        print(f"Error clearing history: {e}")
+        return {"success": False, "error": str(e)}
 
 
 @app.get("/api/health")

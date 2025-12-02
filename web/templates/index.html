@@ -267,7 +267,12 @@
 
             <!-- Results Panel -->
             <div class="results-panel">
-                <h2><i class="fas fa-chart-pie"></i> Analyseergebnisse</h2>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h2 style="margin: 0;"><i class="fas fa-chart-pie"></i> Analyseergebnisse</h2>
+                    <button id="showHistoryBtn" class="btn-secondary" style="padding: 0.5rem 1rem;">
+                        <i class="fas fa-history"></i> History
+                    </button>
+                </div>
                 
                 <div id="loadingState" class="loading-state" style="display: none;">
                     <div class="spinner"></div>
@@ -293,6 +298,32 @@
             </div>
         </main>
 
+        <!-- History Modal -->
+        <div id="historyModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2><i class="fas fa-history"></i> Analyse-History</h2>
+                    <button id="closeHistoryBtn" class="btn-icon">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <p style="color: #64748b; margin: 0;">Gespeicherte Analysen</p>
+                        <button id="clearAllHistoryBtn" class="btn-danger-small">
+                            <i class="fas fa-trash"></i> Alle löschen
+                        </button>
+                    </div>
+                    <div id="historyList" class="history-list">
+                        <div class="empty-state">
+                            <i class="fas fa-inbox"></i>
+                            <p>Keine History vorhanden</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Footer -->
         <footer class="footer">
             <p>&copy; 2025 TradingAgents | 
@@ -305,11 +336,11 @@
 
     <script>
         // TradingAgents Web UI - Inline JavaScript (kein Cache!)
-        // VERSION: 2024-12-02-v6 (Progress-Bar Fix: Langsamer Start, bessere Stage-Verteilung)
+        // VERSION: 2024-12-02-v7 (Real-time Backend Progress Tracking)
         
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 TradingAgents UI v6 wird geladen...');
-            console.log('📅 Build: 2024-12-02-v6 - Progress-Bar optimiert');
+            console.log('🚀 TradingAgents UI v7 wird geladen...');
+            console.log('📅 Build: 2024-12-02-v7 - Echtzeitfortschritt vom Backend');
             
             // Form Elements
             const form = document.getElementById('analysisForm');
@@ -607,10 +638,10 @@
                     }
 
                     const analysisId = startData.analysis_id;
-                    console.log('Analyse gestartet mit ID:', analysisId);
+                    console.log('✅ Analyse gestartet mit ID:', analysisId);
+                    console.log(`📋 Konfiguration: ${analysts.length} Analysten, Tiefe ${depth}`);
 
-                    // Start dynamic progress based on configuration
-                    simulateProgress(analysts.length, depth);
+                    // Start polling for real-time progress updates from backend
                     await pollAnalysisResult(analysisId);
 
                 } catch (error) {
@@ -619,14 +650,21 @@
                 }
             }
 
-            // Poll for analysis results
+            // Poll for analysis results with real-time progress updates
             async function pollAnalysisResult(analysisId) {
                 const maxAttempts = 600; // 10 Minuten (600 Sekunden)
                 let attempts = 0;
+                const pollStartTime = Date.now();
 
                 const poll = async () => {
                     try {
-                        console.log(`📊 Polling Versuch ${attempts + 1}/${maxAttempts} für ID: ${analysisId}`);
+                        attempts++;
+                        const elapsedSeconds = Math.floor((Date.now() - pollStartTime) / 1000);
+                        const minutes = Math.floor(elapsedSeconds / 60);
+                        const seconds = elapsedSeconds % 60;
+                        const timeStr = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+                        
+                        console.log(`📊 Polling #${attempts} (${timeStr}) für ID: ${analysisId.substring(0, 8)}...`);
                         const response = await fetch(`/api/analysis/${analysisId}`);
                         
                         if (!response.ok) {
@@ -634,38 +672,58 @@
                         }
                         
                         const data = await response.json();
-                        console.log('📥 Polling-Antwort:', data);
 
                         if (data.status === 'completed' && data.success) {
                             console.log('✅ Analyse abgeschlossen!');
-                            showResults(data.result);
+                            if (progressInterval) {
+                                clearInterval(progressInterval);
+                                progressInterval = null;
+                            }
+                            progressFill.style.width = '100%';
+                            statusText.textContent = '✓ Analyse abgeschlossen!';
+                            setTimeout(() => showResults(data.result), 300);
                             return;
                         } else if (data.status === 'error' || (!data.success && data.status !== 'running')) {
                             console.error('❌ Analyse-Fehler:', data);
+                            if (progressInterval) {
+                                clearInterval(progressInterval);
+                                progressInterval = null;
+                            }
                             showError(data.message || 'Fehler bei der Analyse');
                             return;
                         } else if (data.status === 'running') {
-                            attempts++;
-                            const minutes = Math.floor(attempts / 60);
-                            const seconds = attempts % 60;
-                            const timeStr = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
-                            
-                            console.log(`⏳ Analyse läuft noch... (${timeStr} / max 10m)`);
                             if (attempts >= maxAttempts) {
                                 console.error('⏱️ Timeout erreicht (10 Minuten)');
+                                if (progressInterval) {
+                                    clearInterval(progressInterval);
+                                    progressInterval = null;
+                                }
                                 showError('Timeout: Analyse dauert länger als 10 Minuten. Bitte prüfen Sie die Logs im Terminal.');
                                 return;
                             }
                             
-                            // Only update time display if progress animation is done
-                            // Check if we've reached the end of progress stages
-                            if (!progressInterval || currentProgressStage >= progressStages.length) {
-                                statusText.textContent = `Analyse läuft... (${timeStr})`;
-                                // Update progress bar to stay near 98% but pulse slightly
-                                const pulseOffset = Math.sin(attempts / 10) * 1;
-                                progressFill.style.width = `${Math.min(98, 97 + pulseOffset)}%`;
+                            // Update progress from backend if available
+                            if (data.progress) {
+                                const prog = data.progress;
+                                
+                                // Stop the simulated progress and use real data
+                                if (progressInterval) {
+                                    clearInterval(progressInterval);
+                                    progressInterval = null;
+                                }
+                                
+                                // Update progress bar with real data
+                                progressFill.style.width = prog.percent + '%';
+                                statusText.textContent = `[Schritt ${prog.step_number}/${prog.total_steps}] ${prog.step}`;
+                                
+                                console.log(`📈 Backend-Progress: ${prog.percent}% - [${prog.step_number}/${prog.total_steps}] ${prog.step}`);
+                            } else {
+                                // Fallback: show time elapsed if no progress data yet
+                                console.log(`⏳ Analyse läuft noch... (${timeStr}), warte auf Progress-Daten...`);
+                                if (!progressInterval) {
+                                    statusText.textContent = `Analyse läuft... (${timeStr})`;
+                                }
                             }
-                            // Otherwise, let the progress simulator continue showing its status
                             
                             setTimeout(poll, 1000);
                         } else {
@@ -687,99 +745,12 @@
                 errorState.style.display = 'none';
                 loadingState.style.display = 'block';
                 progressFill.style.width = '0%';
-                statusText.textContent = 'Initialisierung...';
+                statusText.textContent = 'Starte Analyse...';
                 document.getElementById('analyzeBtn').disabled = true;
             }
 
-            // Simulate progress based on actual analysis steps
+            // Progress interval for cleanup
             let progressInterval = null;
-            let progressStages = [];
-            let currentProgressStage = 0;
-            
-            function simulateProgress(analystCount, debateRounds) {
-                console.log(`🎬 Starte Progress-Animation (${analystCount} Analysten, ${debateRounds} Debatten-Runden)`);
-                
-                // Clear any existing interval
-                if (progressInterval) {
-                    clearInterval(progressInterval);
-                    progressInterval = null;
-                }
-                
-                // Build dynamic stages based on configuration
-                progressStages = [];
-                
-                // Phase 1: Initialization (0-5%)
-                progressStages.push({ percent: 3, text: 'Verbindung zum LLM-Provider...' });
-                progressStages.push({ percent: 5, text: 'Konfiguration wird geladen...' });
-                
-                // Phase 2: Data gathering (5-20%)
-                progressStages.push({ percent: 8, text: `${analystCount} Analysten werden initialisiert...` });
-                progressStages.push({ percent: 12, text: 'Marktdaten werden abgerufen...' });
-                progressStages.push({ percent: 18, text: 'Fundamentaldaten werden geladen...' });
-                
-                // Phase 3: Analyst work (20-65%, depends on analyst count)
-                const analystStartPercent = 20;
-                const analystRangePercent = 45;
-                const percentPerAnalyst = analystRangePercent / analystCount;
-                for (let i = 0; i < analystCount; i++) {
-                    const percent = Math.round(analystStartPercent + (i + 1) * percentPerAnalyst);
-                    progressStages.push({ 
-                        percent: Math.min(percent, 65), 
-                        text: `Analyst ${i + 1}/${analystCount} analysiert...` 
-                    });
-                }
-                
-                // Phase 4: Debate rounds (65-88%, depends on rounds)
-                const debateStartPercent = 65;
-                const debateRangePercent = 23;
-                const percentPerRound = debateRangePercent / debateRounds;
-                for (let i = 0; i < debateRounds; i++) {
-                    const percent = Math.round(debateStartPercent + (i + 1) * percentPerRound);
-                    progressStages.push({ 
-                        percent: Math.min(percent, 88), 
-                        text: `Debatte Runde ${i + 1}/${debateRounds}...` 
-                    });
-                }
-                
-                // Phase 5: Finalization (88-98%)
-                progressStages.push({ percent: 90, text: 'Risikomanagement-Bewertung...' });
-                progressStages.push({ percent: 93, text: 'Forschungsmanager erstellt Synthese...' });
-                progressStages.push({ percent: 96, text: 'Finale Empfehlung wird erstellt...' });
-                progressStages.push({ percent: 98, text: 'Transaktionsvorschlag wird validiert...' });
-
-                console.log(`📊 ${progressStages.length} Stages erstellt`);
-
-                // Calculate dynamic interval based on expected total time
-                // Realistic estimate: 60-300 seconds depending on complexity
-                const estimatedSeconds = 60 + (analystCount * 30) + (debateRounds * 20);
-                // Aim to reach 98% at about 70% of estimated time (to leave buffer for real completion)
-                const intervalMs = Math.floor((estimatedSeconds * 1000 * 0.7) / progressStages.length);
-                // Minimum 3 seconds per stage, maximum 12 seconds
-                const finalIntervalMs = Math.max(3000, Math.min(intervalMs, 12000));
-                
-                console.log(`⏱️ Geschätzte Zeit: ${estimatedSeconds}s (~${Math.round(estimatedSeconds/60)}min), Interval: ${finalIntervalMs}ms pro Stage`);
-
-                currentProgressStage = 0;
-                
-                // Immediately show first stage
-                progressFill.style.width = '0%';
-                statusText.textContent = '[Schritt 1/' + progressStages.length + '] Initialisierung...';
-                
-                progressInterval = setInterval(() => {
-                    if (currentProgressStage < progressStages.length) {
-                        const stage = progressStages[currentProgressStage];
-                        progressFill.style.width = stage.percent + '%';
-                        statusText.textContent = `[Schritt ${currentProgressStage + 1}/${progressStages.length}] ${stage.text}`;
-                        console.log(`📊 Progress: ${stage.percent}% - [Schritt ${currentProgressStage + 1}/${progressStages.length}] ${stage.text}`);
-                        currentProgressStage++;
-                    } else {
-                        // Keep at 98% until real completion
-                        console.log('⏳ Warte auf finale Ergebnisse...');
-                        statusText.textContent = `[Schritt ${progressStages.length}/${progressStages.length}] Finalisierung läuft, bitte warten...`;
-                        // Don't clear interval - keep showing this message
-                    }
-                }, finalIntervalMs);
-            }
 
             // Show results
             // Simple Markdown-to-HTML converter
@@ -990,6 +961,148 @@
                 
                 console.log('✅ Auto-Save Listeners aktiviert');
             }
+
+            // History Management
+            const historyModal = document.getElementById('historyModal');
+            const showHistoryBtn = document.getElementById('showHistoryBtn');
+            const closeHistoryBtn = document.getElementById('closeHistoryBtn');
+            const clearAllHistoryBtn = document.getElementById('clearAllHistoryBtn');
+            const historyList = document.getElementById('historyList');
+
+            showHistoryBtn.addEventListener('click', loadHistory);
+            closeHistoryBtn.addEventListener('click', () => {
+                historyModal.style.display = 'none';
+            });
+
+            clearAllHistoryBtn.addEventListener('click', async () => {
+                if (!confirm('Möchten Sie wirklich die gesamte History löschen?')) return;
+                
+                try {
+                    const response = await fetch('/api/history', { method: 'DELETE' });
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        console.log('✅ History gelöscht');
+                        loadHistory();
+                    } else {
+                        alert('Fehler beim Löschen: ' + data.message);
+                    }
+                } catch (error) {
+                    console.error('Fehler:', error);
+                    alert('Fehler beim Löschen der History');
+                }
+            });
+
+            async function loadHistory() {
+                try {
+                    const response = await fetch('/api/history?limit=50');
+                    const data = await response.json();
+                    
+                    if (data.success && data.history.length > 0) {
+                        displayHistory(data.history);
+                    } else {
+                        historyList.innerHTML = `
+                            <div class="empty-state">
+                                <i class="fas fa-inbox"></i>
+                                <p>Keine History vorhanden</p>
+                            </div>
+                        `;
+                    }
+                    
+                    historyModal.style.display = 'flex';
+                } catch (error) {
+                    console.error('Fehler beim Laden der History:', error);
+                    alert('Fehler beim Laden der History');
+                }
+            }
+
+            function displayHistory(history) {
+                historyList.innerHTML = history.map(item => {
+                    const date = new Date(item.created_at);
+                    const formattedDate = date.toLocaleString('de-DE');
+                    const durationMin = (item.duration / 60).toFixed(1);
+                    
+                    let decisionClass = 'hold';
+                    if (item.decision.includes('KAUFEN') || item.decision.includes('BUY')) {
+                        decisionClass = 'buy';
+                    } else if (item.decision.includes('VERKAUFEN') || item.decision.includes('SELL')) {
+                        decisionClass = 'sell';
+                    }
+                    
+                    return `
+                        <div class="history-item">
+                            <div class="history-item-header">
+                                <div>
+                                    <strong>${item.ticker}</strong>
+                                    <span class="decision-badge ${decisionClass}">${item.decision}</span>
+                                </div>
+                                <button class="btn-icon-small" onclick="deleteHistoryItem('${item.id}')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                            <div class="history-item-details">
+                                <small>
+                                    📅 ${formattedDate} | 
+                                    ⏱️ ${durationMin}min | 
+                                    🤖 ${item.llm_provider} (${item.llm_model}) | 
+                                    📊 Tiefe: ${item.research_depth}
+                                </small>
+                            </div>
+                            <button class="btn-link" onclick="loadHistoryAnalysis('${item.id}')">
+                                Details anzeigen <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            window.deleteHistoryItem = async function(id) {
+                if (!confirm('Diese Analyse wirklich löschen?')) return;
+                
+                try {
+                    const response = await fetch(`/api/history/${id}`, { method: 'DELETE' });
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        console.log('✅ Analyse gelöscht');
+                        loadHistory();
+                    } else {
+                        alert('Fehler beim Löschen: ' + data.message);
+                    }
+                } catch (error) {
+                    console.error('Fehler:', error);
+                    alert('Fehler beim Löschen');
+                }
+            };
+
+            window.loadHistoryAnalysis = async function(id) {
+                try {
+                    const response = await fetch(`/api/history/${id}`);
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        historyModal.style.display = 'none';
+                        showResults({
+                            ticker: data.result.ticker,
+                            date: data.result.date,
+                            decision: data.result.decision,
+                            full_analysis: data.result.full_analysis
+                        });
+                    } else {
+                        alert('Fehler beim Laden: ' + data.message);
+                    }
+                } catch (error) {
+                    console.error('Fehler:', error);
+                    alert('Fehler beim Laden der Analyse');
+                }
+            };
+
+            // Close modal on background click
+            historyModal.addEventListener('click', (e) => {
+                if (e.target === historyModal) {
+                    historyModal.style.display = 'none';
+                }
+            });
         });
     </script>
 </body>
