@@ -245,6 +245,7 @@ async def get_models(provider: str):
 import threading
 import uuid
 import sqlite3
+import logging
 from pathlib import Path as FilePath
 
 # Store for analysis results (temporary, in-memory)
@@ -252,6 +253,10 @@ analysis_results = {}
 
 # Database setup for persistent history
 DB_PATH = FilePath(__file__).parent.parent / "analysis_history.db"
+LOGS_DIR = FilePath(__file__).parent.parent / "analysis_logs"
+
+# Create logs directory if it doesn't exist
+LOGS_DIR.mkdir(exist_ok=True)
 
 def init_database():
     """Initialize SQLite database for analysis history"""
@@ -328,27 +333,79 @@ def format_analysis_result(result_dict: dict) -> str:
     return "\n\n---\n\n".join(sections) if sections else "Keine detaillierten Analysedaten verfügbar."
 
 
-def update_progress(analysis_id: str, step: str, percent: int, step_number: int, total_steps: int):
-    """Update progress for an analysis"""
+def get_analysis_logger(analysis_id: str, ticker: str):
+    """Create a logger for a specific analysis"""
+    logger = logging.getLogger(f"analysis_{analysis_id}")
+    logger.setLevel(logging.DEBUG)
+    logger.handlers.clear()  # Remove existing handlers
+    
+    # Create log filename with timestamp
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_file = LOGS_DIR / f"{ticker}_{timestamp}_{analysis_id[:8]}.log"
+    
+    # File handler
+    file_handler = logging.FileHandler(log_file, encoding='utf-8')
+    file_handler.setLevel(logging.DEBUG)
+    
+    # Formatter
+    formatter = logging.Formatter('%(asctime)s | %(levelname)-8s | %(message)s', 
+                                 datefmt='%Y-%m-%d %H:%M:%S.%f')
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+    
+    # Log file creation
+    logger.info("="*80)
+    logger.info(f"📊 NEUE ANALYSE GESTARTET")
+    logger.info(f"Analysis ID: {analysis_id}")
+    logger.info(f"Ticker: {ticker}")
+    logger.info(f"Log-Datei: {log_file.name}")
+    logger.info("="*80)
+    
+    return logger, log_file
+
+def update_progress(analysis_id: str, step: str, percent: int, step_number: int, total_steps: int, logger=None):
+    """Update progress for an analysis and log it"""
+    timestamp = datetime.now().isoformat()
+    
     if analysis_id in analysis_results:
         analysis_results[analysis_id]["progress"] = {
             "step": step,
             "percent": percent,
             "step_number": step_number,
             "total_steps": total_steps,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": timestamp
         }
-        print(f"📊 Progress [{analysis_id[:8]}]: {percent}% - [{step_number}/{total_steps}] {step}")
+    
+    # Console output
+    print(f"📊 Progress [{analysis_id[:8]}]: {percent}% - [{step_number}/{total_steps}] {step}")
+    
+    # Log to file
+    if logger:
+        logger.info(f"PROGRESS: {percent:3d}% | Step {step_number:2d}/{total_steps:2d} | {step}")
 
 
 def run_analysis_background(analysis_id: str, request: AnalysisRequest):
     """Run analysis in background thread with progress tracking"""
     start_time = datetime.now()
     
+    # Create logger for this analysis
+    logger, log_file = get_analysis_logger(analysis_id, request.ticker)
+    
     try:
         import os
         os.environ["OPENAI_API_KEY"] = request.openai_api_key
         os.environ["ALPHA_VANTAGE_API_KEY"] = request.alpha_vantage_api_key
+        
+        # Log configuration
+        logger.info(f"Konfiguration:")
+        logger.info(f"  - Ticker: {request.ticker}")
+        logger.info(f"  - Datum: {request.date}")
+        logger.info(f"  - LLM Provider: {request.llm_provider}")
+        logger.info(f"  - Quick Model: {request.quick_think_model}")
+        logger.info(f"  - Deep Model: {request.deep_think_model}")
+        logger.info(f"  - Analysten: {', '.join(request.analysts)}")
+        logger.info(f"  - Recherchetiefe: {request.research_depth} Runden")
+        logger.info("-"*80)
         
         # Calculate progress steps based on configuration
         analyst_count = len(request.analysts)
@@ -359,7 +416,7 @@ def run_analysis_background(analysis_id: str, request: AnalysisRequest):
         # Step 1: Initialization
         import time
         current_step += 1
-        update_progress(analysis_id, "Verbindung zum LLM-Provider...", 3, current_step, total_steps)
+        update_progress(analysis_id, "Verbindung zum LLM-Provider...", 3, current_step, total_steps, logger)
         time.sleep(0.3)  # Kurze Pause damit Frontend Update sieht
         
         # Konfiguration erstellen
@@ -371,21 +428,21 @@ def run_analysis_background(analysis_id: str, request: AnalysisRequest):
         config["max_debate_rounds"] = request.research_depth
         
         current_step += 1
-        update_progress(analysis_id, "Konfiguration wird geladen...", 5, current_step, total_steps)
+        update_progress(analysis_id, "Konfiguration wird geladen...", 5, current_step, total_steps, logger)
         time.sleep(0.3)
 
         # Step 2: Initialize Trading Graph
         current_step += 1
-        update_progress(analysis_id, f"{analyst_count} Analysten werden initialisiert...", 8, current_step, total_steps)
+        update_progress(analysis_id, f"{analyst_count} Analysten werden initialisiert...", 8, current_step, total_steps, logger)
         time.sleep(0.2)
         ta = TradingAgentsGraph(debug=True, config=config)
         
         current_step += 1
-        update_progress(analysis_id, "Marktdaten werden abgerufen...", 12, current_step, total_steps)
+        update_progress(analysis_id, "Marktdaten werden abgerufen...", 12, current_step, total_steps, logger)
         time.sleep(0.2)
         
         current_step += 1
-        update_progress(analysis_id, "Fundamentaldaten werden geladen...", 18, current_step, total_steps)
+        update_progress(analysis_id, "Fundamentaldaten werden geladen...", 18, current_step, total_steps, logger)
         time.sleep(0.2)
         
         # Step 3: Run analysis with progress tracking
@@ -399,7 +456,7 @@ def run_analysis_background(analysis_id: str, request: AnalysisRequest):
         for i in range(analyst_count):
             current_step += 1
             percent = analyst_start_percent + int((i + 1) / analyst_count * analyst_range)
-            update_progress(analysis_id, f"Analyst {i + 1}/{analyst_count} analysiert...", percent, current_step, total_steps)
+            update_progress(analysis_id, f"Analyst {i + 1}/{analyst_count} analysiert...", percent, current_step, total_steps, logger)
         
         # Run the actual analysis (this is where the real work happens)
         step_start = datetime.now()
@@ -413,26 +470,33 @@ def run_analysis_background(analysis_id: str, request: AnalysisRequest):
         for i in range(debate_rounds):
             current_step += 1
             percent = debate_start_percent + int((i + 1) / debate_rounds * debate_range)
-            update_progress(analysis_id, f"Debatte Runde {i + 1}/{debate_rounds}...", percent, current_step, total_steps)
+            update_progress(analysis_id, f"Debatte Runde {i + 1}/{debate_rounds}...", percent, current_step, total_steps, logger)
         
         # Finalization phase (88-98%)
         current_step += 1
-        update_progress(analysis_id, "Risikomanagement-Bewertung...", 90, current_step, total_steps)
+        update_progress(analysis_id, "Risikomanagement-Bewertung...", 90, current_step, total_steps, logger)
         
         current_step += 1
-        update_progress(analysis_id, "Forschungsmanager erstellt Synthese...", 93, current_step, total_steps)
+        update_progress(analysis_id, "Forschungsmanager erstellt Synthese...", 93, current_step, total_steps, logger)
         
         current_step += 1
-        update_progress(analysis_id, "Finale Empfehlung wird erstellt...", 96, current_step, total_steps)
+        update_progress(analysis_id, "Finale Empfehlung wird erstellt...", 96, current_step, total_steps, logger)
 
         # Format the full analysis nicely
         formatted_analysis = format_analysis_result(result) if result else "Keine Analysedaten verfügbar."
 
         # Complete
-        update_progress(analysis_id, "Analyse abgeschlossen!", 100, total_steps, total_steps)
+        update_progress(analysis_id, "Analyse abgeschlossen!", 100, total_steps, total_steps, logger)
         
         total_duration = (datetime.now() - start_time).total_seconds()
         print(f"   ✅ Analyse abgeschlossen in {total_duration:.1f}s (~{total_duration/60:.1f}min)")
+        
+        # Log completion
+        logger.info("="*80)
+        logger.info(f"✅ ANALYSE ERFOLGREICH ABGESCHLOSSEN")
+        logger.info(f"Gesamtdauer: {total_duration:.1f}s ({total_duration/60:.1f} Minuten)")
+        logger.info(f"Entscheidung: {decision}")
+        logger.info("="*80)
 
         # Store result in memory
         analysis_results[analysis_id] = {
@@ -500,6 +564,16 @@ def run_analysis_background(analysis_id: str, request: AnalysisRequest):
         print(f"\n❌ Fehler in Analyse {analysis_id[:8]}:")
         print(error_trace)
         
+        # Log error
+        if 'logger' in locals():
+            logger.error("="*80)
+            logger.error("❌ FEHLER IN DER ANALYSE")
+            logger.error(f"Fehler: {str(e)}")
+            logger.error("-"*80)
+            logger.error("Traceback:")
+            logger.error(error_trace)
+            logger.error("="*80)
+        
         analysis_results[analysis_id] = {
             "status": "error",
             "success": False,
@@ -513,6 +587,12 @@ def run_analysis_background(analysis_id: str, request: AnalysisRequest):
                 "timestamp": datetime.now().isoformat()
             }
         }
+    finally:
+        # Close logger handlers
+        if 'logger' in locals():
+            for handler in logger.handlers[:]:
+                handler.close()
+                logger.removeHandler(handler)
 
 
 @app.post("/api/analyze")
