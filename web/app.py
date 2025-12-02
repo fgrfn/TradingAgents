@@ -151,7 +151,14 @@ async def read_root():
     """Serve the main HTML page"""
     html_file = Path(__file__).parent / "templates" / "index.html"
     if html_file.exists():
-        return FileResponse(html_file)
+        return FileResponse(
+            html_file,
+            headers={
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+                "Pragma": "no-cache",
+                "Expires": "0"
+            }
+        )
     return HTMLResponse(content="<h1>TradingAgents Web UI</h1><p>Templates nicht gefunden</p>")
 
 
