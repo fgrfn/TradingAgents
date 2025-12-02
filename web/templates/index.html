@@ -198,6 +198,11 @@
         </footer>
     </div>
 
-    <script src="/static/js/app.js?v=7"></script>
+    <script>
+        // Force reload by adding timestamp
+        const script = document.createElement('script');
+        script.src = '/static/js/app.js?t=' + new Date().getTime();
+        document.body.appendChild(script);
+    </script>
 </body>
 </html>
