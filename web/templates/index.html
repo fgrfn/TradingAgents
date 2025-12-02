@@ -172,6 +172,60 @@
                         </div>
                     </div>
 
+                    <!-- Recherchetiefe -->
+                    <div class="form-section">
+                        <h3>Recherchetiefe</h3>
+                        <div class="form-group">
+                            <label for="depth">
+                                <i class="fas fa-layer-group"></i> 
+                                Tiefe: <span id="depthValue">3</span> Runden
+                            </label>
+                            <input type="range" id="depth" name="depth" min="1" max="5" value="3" step="1">
+                            <div class="depth-labels">
+                                <span>Oberflächlich</span>
+                                <span>Mittel</span>
+                                <span>Tiefgehend</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="btn-primary" id="analyzeBtn">
+                        <i class="fas fa-play"></i> Analyse starten
+                    </button>
+
+                    <!-- LLM Provider -->
+                    <div class="form-section">
+                        <h3>KI-Modell Konfiguration</h3>
+                        <div class="form-group">
+                            <label for="provider">
+                                <i class="fas fa-server"></i> LLM Provider
+                            </label>
+                            <select id="provider" name="provider" required>
+                                <option value="">Bitte wählen...</option>
+                            </select>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="quickModel">
+                                    <i class="fas fa-bolt"></i> Schnelles Modell
+                                </label>
+                                <select id="quickModel" name="quickModel" required>
+                                    <option value="">Zuerst Provider wählen</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="deepModel">
+                                    <i class="fas fa-brain"></i> Tiefgehendes Modell
+                                </label>
+                                <select id="deepModel" name="deepModel" required>
+                                    <option value="">Zuerst Provider wählen</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- API Keys -->
                     <div class="form-section">
                         <h3>API-Schlüssel</h3>
@@ -208,60 +262,6 @@
                             </label>
                         </div>
                     </div>
-
-                    <!-- LLM Provider -->
-                    <div class="form-section">
-                        <h3>KI-Modell Konfiguration</h3>
-                        <div class="form-group">
-                            <label for="provider">
-                                <i class="fas fa-server"></i> LLM Provider
-                            </label>
-                            <select id="provider" name="provider" required>
-                                <option value="">Bitte wählen...</option>
-                            </select>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="quickModel">
-                                    <i class="fas fa-bolt"></i> Schnelles Modell
-                                </label>
-                                <select id="quickModel" name="quickModel" required>
-                                    <option value="">Zuerst Provider wählen</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="deepModel">
-                                    <i class="fas fa-brain"></i> Tiefgehendes Modell
-                                </label>
-                                <select id="deepModel" name="deepModel" required>
-                                    <option value="">Zuerst Provider wählen</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Recherchetiefe -->
-                    <div class="form-section">
-                        <h3>Recherchetiefe</h3>
-                        <div class="form-group">
-                            <label for="depth">
-                                <i class="fas fa-layer-group"></i> 
-                                Tiefe: <span id="depthValue">3</span> Runden
-                            </label>
-                            <input type="range" id="depth" name="depth" min="1" max="5" value="3" step="1">
-                            <div class="depth-labels">
-                                <span>Oberflächlich</span>
-                                <span>Mittel</span>
-                                <span>Tiefgehend</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Submit Button -->
-                    <button type="submit" class="btn-primary" id="analyzeBtn">
-                        <i class="fas fa-play"></i> Analyse starten
-                    </button>
                 </form>
             </div>
 
