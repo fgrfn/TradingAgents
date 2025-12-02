@@ -635,9 +635,12 @@
                 // Calculate dynamic interval based on expected total time
                 // Realistic estimate: 60-300 seconds depending on complexity
                 const estimatedSeconds = 60 + (analystCount * 30) + (debateRounds * 20);
-                const intervalMs = Math.max(3000, Math.floor((estimatedSeconds * 1000) / stages.length));
+                // Slow down the progress bar significantly - aim for 80% of estimated time
+                const intervalMs = Math.floor((estimatedSeconds * 1000 * 0.8) / stages.length);
+                // Minimum 4 seconds per stage, maximum 15 seconds
+                const finalIntervalMs = Math.max(4000, Math.min(intervalMs, 15000));
                 
-                console.log(`⏱️ Geschätzte Zeit: ${estimatedSeconds}s (~${Math.round(estimatedSeconds/60)}min), Interval: ${intervalMs}ms`);
+                console.log(`⏱️ Geschätzte Zeit: ${estimatedSeconds}s (~${Math.round(estimatedSeconds/60)}min), Interval: ${finalIntervalMs}ms pro Stage`);
 
                 let currentStage = 0;
                 progressInterval = setInterval(() => {
@@ -645,19 +648,19 @@
                         const stage = stages[currentStage];
                         progressFill.style.width = stage.percent + '%';
                         console.log(`📊 Progress: ${stage.percent}% - ${stage.text}`);
-                        // Don't overwrite polling status
+                        // Update status text with stage counter and description
                         if (!statusText.textContent.includes('läuft... (')) {
-                            statusText.textContent = stage.text;
+                            statusText.textContent = `[Schritt ${currentStage + 1}/${stages.length}] ${stage.text}`;
                         }
                         currentStage++;
                     } else {
                         // Keep at 98% until real completion
                         console.log('⏳ Warte auf finale Ergebnisse...');
                         if (!statusText.textContent.includes('läuft... (')) {
-                            statusText.textContent = 'Finalisierung läuft, bitte warten...';
+                            statusText.textContent = `[Schritt ${stages.length}/${stages.length}] Finalisierung läuft, bitte warten...`;
                         }
                     }
-                }, intervalMs);
+                }, finalIntervalMs);
             }
 
             // Show results
