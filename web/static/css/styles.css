@@ -209,6 +209,15 @@ body {
 
 .checkbox-label span {
     line-height: 1.3;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.checkbox-label span i {
+    width: 18px;
+    text-align: center;
+    flex-shrink: 0;
 }
 
 .checkbox-label input[type="checkbox"]:checked + span {
