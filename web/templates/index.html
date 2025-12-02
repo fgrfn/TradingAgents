@@ -502,7 +502,8 @@
                     const analysisId = startData.analysis_id;
                     console.log('Analyse gestartet mit ID:', analysisId);
 
-                    simulateProgress();
+                    // Start dynamic progress based on configuration
+                    simulateProgress(analysts.length, depth);
                     await pollAnalysisResult(analysisId);
 
                 } catch (error) {
@@ -570,24 +571,61 @@
                 document.getElementById('analyzeBtn').disabled = true;
             }
 
-            // Simulate progress
+            // Simulate progress based on actual analysis steps
             let progressInterval = null;
-            function simulateProgress() {
-                console.log('🎬 Starte Progress-Animation');
+            function simulateProgress(analystCount, debateRounds) {
+                console.log(`🎬 Starte Progress-Animation (${analystCount} Analysten, ${debateRounds} Debatten-Runden)`);
                 
                 // Clear any existing interval
                 if (progressInterval) {
                     clearInterval(progressInterval);
                 }
                 
-                const stages = [
-                    { percent: 10, text: 'Verbindung zum LLM-Provider...' },
-                    { percent: 25, text: 'Analysten werden initialisiert...' },
-                    { percent: 40, text: 'Marktdaten werden abgerufen...' },
-                    { percent: 60, text: 'Analysten arbeiten...' },
-                    { percent: 80, text: 'Debatte läuft...' },
-                    { percent: 95, text: 'Finale Empfehlung wird erstellt...' }
-                ];
+                // Build dynamic stages based on configuration
+                const stages = [];
+                
+                // Phase 1: Initialization (5%)
+                stages.push({ percent: 5, text: 'Verbindung zum LLM-Provider...' });
+                
+                // Phase 2: Data gathering (15%)
+                stages.push({ percent: 15, text: `${analystCount} Analysten werden initialisiert...` });
+                stages.push({ percent: 25, text: 'Marktdaten werden abgerufen...' });
+                
+                // Phase 3: Analyst work (25-70%, depends on analyst count)
+                const analystPhasePercent = 25;
+                const percentPerAnalyst = 45 / analystCount;
+                for (let i = 0; i < analystCount; i++) {
+                    const percent = Math.round(analystPhasePercent + (i + 1) * percentPerAnalyst);
+                    stages.push({ 
+                        percent: percent, 
+                        text: `Analyst ${i + 1}/${analystCount} arbeitet...` 
+                    });
+                }
+                
+                // Phase 4: Debate rounds (70-90%, depends on rounds)
+                const debateStartPercent = 70;
+                const percentPerRound = 20 / debateRounds;
+                for (let i = 0; i < debateRounds; i++) {
+                    const percent = Math.round(debateStartPercent + (i + 1) * percentPerRound);
+                    stages.push({ 
+                        percent: percent, 
+                        text: `Debatte Runde ${i + 1}/${debateRounds}...` 
+                    });
+                }
+                
+                // Phase 5: Finalization (90-95%)
+                stages.push({ percent: 92, text: 'Forschungsmanager erstellt Synthese...' });
+                stages.push({ percent: 95, text: 'Finale Empfehlung wird erstellt...' });
+                stages.push({ percent: 98, text: 'Transaktionsvorschlag wird validiert...' });
+
+                console.log(`📊 ${stages.length} Stages erstellt`);
+
+                // Calculate dynamic interval based on expected total time
+                // Assume ~30-90 seconds total depending on complexity
+                const estimatedSeconds = 30 + (analystCount * 10) + (debateRounds * 8);
+                const intervalMs = Math.max(2000, Math.floor((estimatedSeconds * 1000) / stages.length));
+                
+                console.log(`⏱️ Geschätzte Zeit: ${estimatedSeconds}s, Interval: ${intervalMs}ms`);
 
                 let currentStage = 0;
                 progressInterval = setInterval(() => {
@@ -596,16 +634,18 @@
                         progressFill.style.width = stage.percent + '%';
                         console.log(`📊 Progress: ${stage.percent}% - ${stage.text}`);
                         // Don't overwrite polling status
-                        if (!statusText.textContent.includes('läuft...')) {
+                        if (!statusText.textContent.includes('läuft... (')) {
                             statusText.textContent = stage.text;
                         }
                         currentStage++;
                     } else {
-                        clearInterval(progressInterval);
-                        progressInterval = null;
-                        console.log('✓ Progress-Animation abgeschlossen');
+                        // Keep at 98% until real completion
+                        console.log('⏳ Warte auf finale Ergebnisse...');
+                        if (!statusText.textContent.includes('läuft... (')) {
+                            statusText.textContent = 'Finalisierung läuft, bitte warten...';
+                        }
                     }
-                }, 3000);
+                }, intervalMs);
             }
 
             // Show results
