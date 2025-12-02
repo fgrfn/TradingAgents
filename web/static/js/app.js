@@ -55,12 +55,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // Auto-save API keys when they change (with debounce)
     let saveTimeout;
     [openaiKeyInput, alphaVantageKeyInput, discordWebhookInput].forEach(input => {
-        input.addEventListener('input', function() {
-            clearTimeout(saveTimeout);
-            saveTimeout = setTimeout(() => {
-                saveConfig();
-            }, 1000); // Save 1 second after user stops typing
-        });
+        if (input) {
+            input.addEventListener('input', function() {
+                clearTimeout(saveTimeout);
+                saveTimeout = setTimeout(() => {
+                    saveConfig();
+                }, 1000); // Save 1 second after user stops typing
+            });
+        }
     });
 
     // Load saved configuration from .env
@@ -86,11 +88,18 @@ document.addEventListener('DOMContentLoaded', function() {
     // Save configuration to .env
     async function saveConfig() {
         try {
+            if (!openaiKeyInput || !alphaVantageKeyInput || !discordWebhookInput) {
+                console.error('Nicht alle Input-Elemente gefunden');
+                return;
+            }
+
             const config = {
                 openai_api_key: openaiKeyInput.value.trim(),
                 alpha_vantage_api_key: alphaVantageKeyInput.value.trim(),
                 discord_webhook: discordWebhookInput.value.trim()
             };
+
+            console.log('Speichere Konfiguration:', config);
 
             const response = await fetch('/api/save-config', {
                 method: 'POST',
@@ -102,7 +111,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const result = await response.json();
             if (result.success) {
-                console.log('Konfiguration gespeichert');
+                console.log('✓ Konfiguration gespeichert');
+            } else {
+                console.error('Fehler:', result.message);
             }
         } catch (error) {
             console.error('Fehler beim Speichern der Konfiguration:', error);
