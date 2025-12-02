@@ -229,11 +229,15 @@ async def get_models(provider: str):
     return models.get(provider_lower, {"quick": [], "deep": []})
 
 
-@app.post("/api/analyze", response_model=AnalysisResponse)
-async def analyze_stock(request: AnalysisRequest):
-    """Start stock analysis"""
+import threading
+import uuid
+
+# Store for analysis results
+analysis_results = {}
+
+def run_analysis_background(analysis_id: str, request: AnalysisRequest):
+    """Run analysis in background thread"""
     try:
-        # Set API keys as environment variables
         import os
         os.environ["OPENAI_API_KEY"] = request.openai_api_key
         os.environ["ALPHA_VANTAGE_API_KEY"] = request.alpha_vantage_api_key
@@ -252,6 +256,18 @@ async def analyze_stock(request: AnalysisRequest):
         # Analyse durchführen
         result, decision = ta.propagate(request.ticker, request.date)
 
+        # Store result
+        analysis_results[analysis_id] = {
+            "status": "completed",
+            "success": True,
+            "result": {
+                "decision": str(decision),
+                "ticker": request.ticker,
+                "date": request.date,
+                "full_analysis": str(result) if result else None
+            }
+        }
+
         # Send Discord notification if webhook provided
         if request.discord_webhook and request.discord_notify:
             send_discord_notification(
@@ -262,22 +278,68 @@ async def analyze_stock(request: AnalysisRequest):
                 request.analysts
             )
 
-        return AnalysisResponse(
-            success=True,
-            message="Analyse erfolgreich abgeschlossen",
-            result={
-                "decision": str(decision),
-                "ticker": request.ticker,
-                "date": request.date,
-                "full_analysis": str(result) if result else None
-            }
-        )
-
     except Exception as e:
-        return AnalysisResponse(
-            success=False,
-            message=f"Fehler bei der Analyse: {str(e)}"
-        )
+        analysis_results[analysis_id] = {
+            "status": "error",
+            "success": False,
+            "error": str(e)
+        }
+
+
+@app.post("/api/analyze")
+async def analyze_stock(request: AnalysisRequest):
+    """Start stock analysis (async)"""
+    # Generate unique ID for this analysis
+    analysis_id = str(uuid.uuid4())
+    
+    # Mark as running
+    analysis_results[analysis_id] = {
+        "status": "running",
+        "success": None
+    }
+    
+    # Start background thread
+    thread = threading.Thread(target=run_analysis_background, args=(analysis_id, request))
+    thread.start()
+    
+    return {
+        "success": True,
+        "message": "Analyse gestartet",
+        "analysis_id": analysis_id
+    }
+
+
+@app.get("/api/analysis/{analysis_id}")
+async def get_analysis_result(analysis_id: str):
+    """Get analysis result by ID"""
+    if analysis_id not in analysis_results:
+        return {
+            "status": "not_found",
+            "success": False,
+            "message": "Analyse nicht gefunden"
+        }
+    
+    result = analysis_results[analysis_id]
+    
+    if result["status"] == "running":
+        return {
+            "status": "running",
+            "success": None,
+            "message": "Analyse läuft noch..."
+        }
+    elif result["status"] == "completed":
+        return {
+            "status": "completed",
+            "success": True,
+            "message": "Analyse erfolgreich abgeschlossen",
+            "result": result["result"]
+        }
+    else:  # error
+        return {
+            "status": "error",
+            "success": False,
+            "message": f"Fehler bei der Analyse: {result.get('error', 'Unbekannter Fehler')}"
+        }
 
 
 @app.websocket("/ws")

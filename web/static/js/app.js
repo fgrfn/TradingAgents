@@ -258,9 +258,7 @@ document.addEventListener('DOMContentLoaded', function() {
         showLoading();
 
         try {
-            // Simulate progress
-            simulateProgress();
-
+            // Start analysis
             const response = await fetch('/api/analyze', {
                 method: 'POST',
                 headers: {
@@ -269,7 +267,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 body: JSON.stringify(requestData)
             });
 
-            // Check if response is OK
             if (!response.ok) {
                 const errorText = await response.text();
                 console.error('Server error:', errorText);
@@ -277,28 +274,63 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            // Try to parse JSON
-            let data;
-            try {
-                data = await response.json();
-            } catch (parseError) {
-                const text = await response.text();
-                console.error('JSON Parse Error:', parseError);
-                console.error('Response text:', text);
-                showError('Ungültige Server-Antwort: Erwartet JSON, erhalten: ' + text.substring(0, 100));
+            const startData = await response.json();
+            
+            if (!startData.success) {
+                showError(startData.message || 'Fehler beim Starten der Analyse');
                 return;
             }
 
-            if (data.success) {
-                showResults(data.result);
-            } else {
-                showError(data.message);
-            }
+            const analysisId = startData.analysis_id;
+            console.log('Analyse gestartet mit ID:', analysisId);
+
+            // Show loading state and simulate progress
+            simulateProgress();
+
+            // Poll for results
+            await pollAnalysisResult(analysisId);
 
         } catch (error) {
             console.error('Fehler bei der Analyse:', error);
             showError('Fehler bei der Kommunikation mit dem Server: ' + error.message);
         }
+    }
+
+    // Poll for analysis results
+    async function pollAnalysisResult(analysisId) {
+        const maxAttempts = 180; // 3 minutes max (180 * 1 second)
+        let attempts = 0;
+
+        const poll = async () => {
+            try {
+                const response = await fetch(`/api/analysis/${analysisId}`);
+                const data = await response.json();
+
+                if (data.status === 'completed' && data.success) {
+                    showResults(data.result);
+                    return;
+                } else if (data.status === 'error' || !data.success) {
+                    showError(data.message || 'Fehler bei der Analyse');
+                    return;
+                } else if (data.status === 'running') {
+                    attempts++;
+                    if (attempts >= maxAttempts) {
+                        showError('Timeout: Analyse dauert zu lange');
+                        return;
+                    }
+                    // Poll again after 1 second
+                    setTimeout(poll, 1000);
+                } else {
+                    showError('Unbekannter Status: ' + data.status);
+                }
+            } catch (error) {
+                console.error('Polling error:', error);
+                showError('Fehler beim Abrufen der Ergebnisse: ' + error.message);
+            }
+        };
+
+        poll();
+    }
     }
 
     // Show loading state
