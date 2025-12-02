@@ -421,23 +421,38 @@ async def save_config(request: dict):
                             if key not in keys_to_update:
                                 existing_lines.append(line)
                     else:
-                        existing_lines.append(line)
+                        # Keep comments and empty lines
+                        if not any(k in line_stripped for k in keys_to_update.keys()):
+                            existing_lines.append(line)
         
         # Write updated .env
         with open(env_path, 'w') as f:
+            # Write header if new file
+            if not existing_lines:
+                f.write("# TradingAgents Configuration\n")
+                f.write(f"# Generated: {datetime.now().isoformat()}\n\n")
+            
             # Write existing non-API lines
             for line in existing_lines:
                 f.write(line)
             
             # Write API keys
+            if existing_lines and not existing_lines[-1].endswith('\n'):
+                f.write("\n")
             f.write("\n# API Keys (updated via Web UI)\n")
             for key, value in keys_to_update.items():
                 if value:
                     f.write(f'{key}="{value}"\n')
         
+        print(f"✓ Configuration saved to {env_path}")
+        print(f"  - OpenAI Key: {'***' if request.get('openai_api_key') else 'not set'}")
+        print(f"  - Alpha Vantage Key: {'***' if request.get('alpha_vantage_api_key') else 'not set'}")
+        print(f"  - Discord Webhook: {'***' if request.get('discord_webhook') else 'not set'}")
+        
         return {"success": True, "message": "Konfiguration gespeichert"}
     
     except Exception as e:
+        print(f"✗ Error saving config: {e}")
         return {"success": False, "message": f"Fehler beim Speichern: {str(e)}"}
 
 
