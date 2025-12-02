@@ -269,7 +269,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 body: JSON.stringify(requestData)
             });
 
-            const data = await response.json();
+            // Check if response is OK
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Server error:', errorText);
+                showError(`Server-Fehler (${response.status}): ${errorText.substring(0, 200)}`);
+                return;
+            }
+
+            // Try to parse JSON
+            let data;
+            try {
+                data = await response.json();
+            } catch (parseError) {
+                const text = await response.text();
+                console.error('JSON Parse Error:', parseError);
+                console.error('Response text:', text);
+                showError('Ungültige Server-Antwort: Erwartet JSON, erhalten: ' + text.substring(0, 100));
+                return;
+            }
 
             if (data.success) {
                 showResults(data.result);

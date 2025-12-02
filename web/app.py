@@ -265,7 +265,12 @@ async def analyze_stock(request: AnalysisRequest):
         return AnalysisResponse(
             success=True,
             message="Analyse erfolgreich abgeschlossen",
-            result={"decision": str(decision)}
+            result={
+                "decision": str(decision),
+                "ticker": request.ticker,
+                "date": request.date,
+                "full_analysis": str(result) if result else None
+            }
         )
 
     except Exception as e:
