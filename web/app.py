@@ -459,30 +459,23 @@ def run_analysis_background(analysis_id: str, request: AnalysisRequest):
             update_progress(analysis_id, f"Analyst {i + 1}/{analyst_count} analysiert...", percent, current_step, total_steps, logger)
         
         # Run the actual analysis (this is where the real work happens)
+        # Note: propagate() does all the work internally (analysts, debates, etc.)
+        logger.info("-"*80)
+        logger.info("Starte Hauptanalyse (propagate)...")
         step_start = datetime.now()
+        
+        update_progress(analysis_id, "Analysten arbeiten an der Analyse...", 50, current_step + 2, total_steps, logger)
+        
         result, decision = ta.propagate(request.ticker, request.date)
+        
         analysis_duration = (datetime.now() - step_start).total_seconds()
+        logger.info(f"Hauptanalyse abgeschlossen nach {analysis_duration:.1f}s")
+        logger.info("-"*80)
         print(f"   ⏱️  Propagate-Phase dauerte: {analysis_duration:.1f}s")
-        
-        # Debate phase (65-88%)
-        debate_start_percent = 65
-        debate_range = 23
-        for i in range(debate_rounds):
-            current_step += 1
-            percent = debate_start_percent + int((i + 1) / debate_rounds * debate_range)
-            update_progress(analysis_id, f"Debatte Runde {i + 1}/{debate_rounds}...", percent, current_step, total_steps, logger)
-        
-        # Finalization phase (88-98%)
-        current_step += 1
-        update_progress(analysis_id, "Risikomanagement-Bewertung...", 90, current_step, total_steps, logger)
-        
-        current_step += 1
-        update_progress(analysis_id, "Forschungsmanager erstellt Synthese...", 93, current_step, total_steps, logger)
-        
-        current_step += 1
-        update_progress(analysis_id, "Finale Empfehlung wird erstellt...", 96, current_step, total_steps, logger)
 
         # Format the full analysis nicely
+        current_step = total_steps - 1
+        update_progress(analysis_id, "Formatiere Ergebnisse...", 95, current_step, total_steps, logger)
         formatted_analysis = format_analysis_result(result) if result else "Keine Analysedaten verfügbar."
 
         # Complete
