@@ -83,6 +83,7 @@ class ConnectionManager:
             except:
                 pass
 
+
 manager = ConnectionManager()
 
 
@@ -146,7 +147,6 @@ def send_discord_notification(webhook_url: str, ticker: str, decision: str, date
 
 
 @app.get("/", response_class=HTMLResponse)
-@app.get("/", response_class=HTMLResponse)
 async def read_root():
     """Serve the main HTML page"""
     html_file = Path(__file__).parent / "templates" / "index.html"
@@ -190,24 +190,14 @@ async def get_models(provider: str):
                 {"name": "GPT-5", "value": "gpt-5"},
                 {"name": "GPT-5-turbo", "value": "gpt-5-turbo"},
                 {"name": "o4-mini", "value": "o4-mini"},
-        # Analyse durchführen
-        _, decision = ta.propagate(request.ticker, request.date)
-
-        # Send Discord notification if webhook provided
-        if request.discord_webhook and request.discord_notify:
-            send_discord_notification(
-                request.discord_webhook,
-                request.ticker,
-                str(decision),
-                request.date,
-                request.analysts
-            )
-
-        return AnalysisResponse(
-            success=True,
-            message="Analyse erfolgreich abgeschlossen",
-            result={"decision": str(decision)}
-        )       {"name": "Claude Haiku 3.5", "value": "claude-3-5-haiku-latest"},
+                {"name": "o3-mini", "value": "o3-mini"},
+                {"name": "o3", "value": "o3"},
+                {"name": "o1", "value": "o1"},
+            ],
+        },
+        "anthropic": {
+            "quick": [
+                {"name": "Claude Haiku 3.5", "value": "claude-3-5-haiku-latest"},
                 {"name": "Claude Sonnet 3.5", "value": "claude-3-5-sonnet-latest"},
                 {"name": "Claude Sonnet 3.7", "value": "claude-3-7-sonnet-latest"},
                 {"name": "Claude Sonnet 4", "value": "claude-sonnet-4-0"},
@@ -260,7 +250,17 @@ async def analyze_stock(request: AnalysisRequest):
         ta = TradingAgentsGraph(debug=True, config=config)
 
         # Analyse durchführen
-        _, decision = ta.propagate(request.ticker, request.date)
+        result, decision = ta.propagate(request.ticker, request.date)
+
+        # Send Discord notification if webhook provided
+        if request.discord_webhook and request.discord_notify:
+            send_discord_notification(
+                request.discord_webhook,
+                request.ticker,
+                str(decision),
+                request.date,
+                request.analysts
+            )
 
         return AnalysisResponse(
             success=True,
