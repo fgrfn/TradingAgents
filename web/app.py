@@ -13,7 +13,7 @@ import asyncio
 import json
 import sys
 import requests
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 # Add parent directory to path to import tradingagents
@@ -162,7 +162,7 @@ async def read_root():
                 "Pragma": "no-cache",
                 "Expires": "0",
                 "ETag": etag,
-                "Last-Modified": datetime.utcfromtimestamp(mtime).strftime('%a, %d %b %Y %H:%M:%S GMT')
+                "Last-Modified": datetime.fromtimestamp(mtime, tz=timezone.utc).strftime('%a, %d %b %Y %H:%M:%S GMT')
             }
         )
     return HTMLResponse(content="<h1>TradingAgents Web UI</h1><p>Templates nicht gefunden</p>")
