@@ -9,6 +9,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const depthSlider = document.getElementById('depth');
     const depthValue = document.getElementById('depthValue');
     const dateInput = document.getElementById('date');
+    const openaiKeyInput = document.getElementById('openaiKey');
+    const alphaVantageKeyInput = document.getElementById('alphaVantageKey');
+    const discordWebhookInput = document.getElementById('discordWebhook');
     
     // State Elements
     const loadingState = document.getElementById('loadingState');
@@ -19,6 +22,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Set default date to today
     dateInput.valueAsDate = new Date();
+
+    // Load saved configuration
+    loadSavedConfig();
 
     // Load providers on page load
     loadProviders();
@@ -41,6 +47,63 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
         await startAnalysis();
     });
+
+    // Auto-save API keys when they change (with debounce)
+    let saveTimeout;
+    [openaiKeyInput, alphaVantageKeyInput, discordWebhookInput].forEach(input => {
+        input.addEventListener('input', function() {
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                saveConfig();
+            }, 1000); // Save 1 second after user stops typing
+        });
+    });
+
+    // Load saved configuration from .env
+    async function loadSavedConfig() {
+        try {
+            const response = await fetch('/api/config');
+            const config = await response.json();
+            
+            if (config.openai_api_key) {
+                openaiKeyInput.value = config.openai_api_key;
+            }
+            if (config.alpha_vantage_api_key) {
+                alphaVantageKeyInput.value = config.alpha_vantage_api_key;
+            }
+            if (config.discord_webhook) {
+                discordWebhookInput.value = config.discord_webhook;
+            }
+        } catch (error) {
+            console.error('Fehler beim Laden der Konfiguration:', error);
+        }
+    }
+
+    // Save configuration to .env
+    async function saveConfig() {
+        try {
+            const config = {
+                openai_api_key: openaiKeyInput.value.trim(),
+                alpha_vantage_api_key: alphaVantageKeyInput.value.trim(),
+                discord_webhook: discordWebhookInput.value.trim()
+            };
+
+            const response = await fetch('/api/save-config', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(config)
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                console.log('Konfiguration gespeichert');
+            }
+        } catch (error) {
+            console.error('Fehler beim Speichern der Konfiguration:', error);
+        }
+    }
 
     // Load available providers
     async function loadProviders() {
@@ -101,22 +164,28 @@ document.addEventListener('DOMContentLoaded', function() {
         // Get form data
         const ticker = document.getElementById('ticker').value.trim().toUpperCase();
         const date = document.getElementById('date').value;
+        const openaiKey = document.getElementById('openaiKey').value.trim();
+        const alphaVantageKey = document.getElementById('alphaVantageKey').value.trim();
         const provider = providerSelect.value;
         const providerUrl = providerSelect.options[providerSelect.selectedIndex].dataset.url;
         const quickModel = quickModelSelect.value;
         const deepModel = deepModelSelect.value;
         const depth = parseInt(depthSlider.value);
+        const discordWebhook = document.getElementById('discordWebhook').value.trim();
+        const discordNotify = document.getElementById('discordNotify').checked;
+            if (data.success) {
+                // Save config after successful analysis
+                await saveConfig();
+                showResults(data.result);
+            } else {
+                showError(data.message);
+            }
 
-        // Get selected analysts
-        const analysts = [];
-        document.querySelectorAll('input[name="analysts"]:checked').forEach(checkbox => {
-            analysts.push(checkbox.value);
-        });
-
-        // Validation
-        if (!ticker || !date || !provider || !quickModel || !deepModel || analysts.length === 0) {
-            showError('Bitte füllen Sie alle Felder aus und wählen Sie mindestens einen Analysten');
-            return;
+        } catch (error) {
+            console.error('Fehler bei der Analyse:', error);
+            showError('Fehler bei der Kommunikation mit dem Server: ' + error.message);
+        }
+    }       return;
         }
 
         // Prepare request
@@ -128,7 +197,11 @@ document.addEventListener('DOMContentLoaded', function() {
             provider_url: providerUrl,
             deep_think_model: deepModel,
             quick_think_model: quickModel,
-            research_depth: depth
+            research_depth: depth,
+            openai_api_key: openaiKey,
+            alpha_vantage_api_key: alphaVantageKey,
+            discord_webhook: discordWebhook || null,
+            discord_notify: discordNotify
         };
 
         // Show loading state

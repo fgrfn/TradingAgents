@@ -67,6 +67,43 @@
                         </div>
                     </div>
 
+                    <!-- API Keys -->
+                    <div class="form-section">
+                        <h3>API-Schlüssel</h3>
+                        <div class="form-group">
+                            <label for="openaiKey">
+                                <i class="fas fa-key"></i> OpenAI API Key
+                            </label>
+                            <input type="password" id="openaiKey" name="openaiKey" placeholder="sk-..." required>
+                            <small class="hint-text">Wird für LLM-Agenten benötigt</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="alphaVantageKey">
+                                <i class="fas fa-key"></i> Alpha Vantage API Key
+                            </label>
+                            <input type="password" id="alphaVantageKey" name="alphaVantageKey" placeholder="Ihr Alpha Vantage Key" required>
+                            <small class="hint-text">Für Fundamental- und Nachrichtendaten</small>
+                        </div>
+                    </div>
+
+                    <!-- Discord Integration (Optional) -->
+                    <div class="form-section">
+                        <h3>Discord Integration <span class="optional-badge">(Optional)</span></h3>
+                        <div class="form-group">
+                            <label for="discordWebhook">
+                                <i class="fab fa-discord"></i> Discord Webhook URL
+                            </label>
+                            <input type="url" id="discordWebhook" name="discordWebhook" placeholder="https://discord.com/api/webhooks/...">
+                            <small class="hint-text">Ergebnisse werden automatisch an Discord gesendet</small>
+                        </div>
+                        <div class="checkbox-group-single">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="discordNotify" name="discordNotify" checked>
+                                <span><i class="fas fa-bell"></i> Bei Abschluss benachrichtigen</span>
+                            </label>
+                        </div>
+                    </div>
+
                     <!-- LLM Provider -->
                     <div class="form-section">
                         <h3>KI-Modell Konfiguration</h3>
