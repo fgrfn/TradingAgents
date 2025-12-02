@@ -248,6 +248,52 @@ import uuid
 # Store for analysis results
 analysis_results = {}
 
+def format_analysis_result(result_dict: dict) -> str:
+    """Format analysis result dictionary into readable text"""
+    if not result_dict:
+        return "Keine Analysedaten verfügbar."
+    
+    sections = []
+    
+    # Market Report
+    if "market_report" in result_dict and result_dict["market_report"]:
+        sections.append("## 📊 Technische Marktanalyse\n" + result_dict["market_report"])
+    
+    # Fundamentals Report
+    if "fundamentals_report" in result_dict and result_dict["fundamentals_report"]:
+        sections.append("## 📈 Fundamentalanalyse\n" + result_dict["fundamentals_report"])
+    
+    # News Report
+    if "news_report" in result_dict and result_dict["news_report"]:
+        sections.append("## 📰 Nachrichten & Makroökonomie\n" + result_dict["news_report"])
+    
+    # Sentiment Report
+    if "sentiment_report" in result_dict and result_dict["sentiment_report"]:
+        sections.append("## 💬 Marktstimmung & Social Media\n" + result_dict["sentiment_report"])
+    
+    # Investment Debate
+    if "investment_debate_state" in result_dict and result_dict["investment_debate_state"]:
+        debate_state = result_dict["investment_debate_state"]
+        
+        # Bull/Bear History
+        if "history" in debate_state and debate_state["history"]:
+            sections.append("## 🎯 Investitionsdebatte (Bull vs. Bear)\n" + debate_state["history"])
+        
+        # Judge Decision
+        if "judge_decision" in debate_state and debate_state["judge_decision"]:
+            sections.append("## ⚖️ Urteil des Richters\n" + debate_state["judge_decision"])
+    
+    # Investment Plan
+    if "investment_plan" in result_dict and result_dict["investment_plan"]:
+        sections.append("## 📋 Investitionsplan\n" + result_dict["investment_plan"])
+    
+    # Final Trade Decision (from trader)
+    if "trader_investment_plan" in result_dict and result_dict["trader_investment_plan"]:
+        sections.append("## 🎯 Finale Handelsentscheidung des Traders\n" + result_dict["trader_investment_plan"])
+    
+    return "\n\n---\n\n".join(sections) if sections else "Keine detaillierten Analysedaten verfügbar."
+
+
 def run_analysis_background(analysis_id: str, request: AnalysisRequest):
     """Run analysis in background thread"""
     try:
@@ -269,6 +315,9 @@ def run_analysis_background(analysis_id: str, request: AnalysisRequest):
         # Analyse durchführen
         result, decision = ta.propagate(request.ticker, request.date)
 
+        # Format the full analysis nicely
+        formatted_analysis = format_analysis_result(result) if result else "Keine Analysedaten verfügbar."
+
         # Store result
         analysis_results[analysis_id] = {
             "status": "completed",
@@ -277,7 +326,7 @@ def run_analysis_background(analysis_id: str, request: AnalysisRequest):
                 "decision": str(decision),
                 "ticker": request.ticker,
                 "date": request.date,
-                "full_analysis": str(result) if result else None
+                "full_analysis": formatted_analysis
             }
         }
 

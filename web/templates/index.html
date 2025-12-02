@@ -6,6 +6,111 @@
     <title>TradingAgents - Intelligente Aktienanalyse</title>
     <link rel="stylesheet" href="/static/css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Analysis Content Styling */
+        .analysis-content {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 15px;
+            line-height: 1.8;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        
+        .analysis-content h2 {
+            color: #1a73e8;
+            font-size: 1.5em;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #1a73e8;
+        }
+        
+        .analysis-content h2:first-child {
+            margin-top: 0;
+        }
+        
+        .analysis-content h3 {
+            color: #2c3e50;
+            font-size: 1.3em;
+            margin-top: 25px;
+            margin-bottom: 12px;
+        }
+        
+        .analysis-content h4 {
+            color: #34495e;
+            font-size: 1.1em;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+        
+        .analysis-content p {
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+        
+        .analysis-content strong {
+            color: #1a73e8;
+            font-weight: 600;
+        }
+        
+        .analysis-content hr {
+            border: none;
+            border-top: 1px solid #ddd;
+            margin: 30px 0;
+        }
+        
+        .analysis-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .analysis-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        .analysis-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #eee;
+            color: #2c3e50;
+        }
+        
+        .analysis-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .analysis-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .analysis-content::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .analysis-content::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        
+        .analysis-content::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+        
+        .analysis-content::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -200,11 +305,11 @@
 
     <script>
         // TradingAgents Web UI - Inline JavaScript (kein Cache!)
-        // VERSION: 2024-12-02-v4-FIXED (Syntaxfehler behoben, 10min Timeout, dynamischer Progress)
+        // VERSION: 2024-12-02-v5 (Formatierte Analyse mit Markdown-Rendering, Tabellen-Support)
         
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 TradingAgents UI v4-FIXED wird geladen...');
-            console.log('📅 Build: 2024-12-02-v4 - Syntaxfehler behoben');
+            console.log('🚀 TradingAgents UI v5 wird geladen...');
+            console.log('📅 Build: 2024-12-02-v5 - Formatierte Analyse mit Markdown');
             
             // Form Elements
             const form = document.getElementById('analysisForm');
@@ -664,6 +769,59 @@
             }
 
             // Show results
+            // Simple Markdown-to-HTML converter
+            function markdownToHtml(markdown) {
+                if (!markdown) return '';
+                
+                let html = markdown;
+                
+                // Headers
+                html = html.replace(/^### (.*$)/gim, '<h4>$1</h4>');
+                html = html.replace(/^## (.*$)/gim, '<h3>$1</h3>');
+                html = html.replace(/^# (.*$)/gim, '<h2>$1</h2>');
+                
+                // Bold
+                html = html.replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>');
+                
+                // Horizontal rules
+                html = html.replace(/^---$/gim, '<hr>');
+                
+                // Tables
+                html = html.replace(/\n\|(.*?)\|\n/g, function(match) {
+                    const rows = match.trim().split('\n');
+                    let tableHtml = '<table class="analysis-table">';
+                    
+                    rows.forEach((row, idx) => {
+                        if (row.includes('---')) return; // Skip separator row
+                        
+                        const cells = row.split('|').filter(c => c.trim());
+                        const tag = idx === 0 ? 'th' : 'td';
+                        tableHtml += '<tr>';
+                        cells.forEach(cell => {
+                            tableHtml += `<${tag}>${cell.trim()}</${tag}>`;
+                        });
+                        tableHtml += '</tr>';
+                    });
+                    
+                    tableHtml += '</table>';
+                    return tableHtml;
+                });
+                
+                // Line breaks
+                html = html.replace(/\n\n/g, '</p><p>');
+                html = '<p>' + html + '</p>';
+                
+                // Clean up empty paragraphs
+                html = html.replace(/<p><\/p>/g, '');
+                html = html.replace(/<p>\s*<h/g, '<h');
+                html = html.replace(/<\/h(\d)>\s*<\/p>/g, '</h$1>');
+                html = html.replace(/<p>\s*<table/g, '<table');
+                html = html.replace(/<\/table>\s*<\/p>/g, '</table>');
+                html = html.replace(/<p>\s*<hr>\s*<\/p>/g, '<hr>');
+                
+                return html;
+            }
+            
             function showResults(result) {
                 console.log('🎉 Zeige Ergebnisse:', result);
                 
@@ -701,6 +859,9 @@
                     console.warn('⚠️ Keine Entscheidung in den Ergebnissen gefunden');
                 }
 
+                // Convert markdown analysis to HTML
+                const analysisHtml = markdownToHtml(result.full_analysis || '');
+
                 resultsContent.innerHTML = `
                     <div class="result-card">
                         <h3><i class="fas fa-chart-line"></i> Handelsentscheidung für ${result.ticker || 'N/A'}</h3>
@@ -712,7 +873,9 @@
                         </div>
                         <div class="result-details">
                             <h4>Vollständige Analyse:</h4>
-                            <pre>${result.full_analysis || JSON.stringify(result, null, 2)}</pre>
+                            <div class="analysis-content">
+                                ${analysisHtml}
+                            </div>
                         </div>
                     </div>
                 `;
