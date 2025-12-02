@@ -148,15 +148,21 @@ def send_discord_notification(webhook_url: str, ticker: str, decision: str, date
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root():
-    """Serve the main HTML page"""
+    """Serve the main HTML page with aggressive no-cache headers"""
     html_file = Path(__file__).parent / "templates" / "index.html"
     if html_file.exists():
+        # Generate unique ETag based on file modification time and current timestamp
+        mtime = html_file.stat().st_mtime
+        etag = f'"{mtime}-{datetime.now().timestamp()}"'
+        
         return FileResponse(
             html_file,
             headers={
-                "Cache-Control": "no-cache, no-store, must-revalidate",
+                "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
                 "Pragma": "no-cache",
-                "Expires": "0"
+                "Expires": "0",
+                "ETag": etag,
+                "Last-Modified": datetime.utcfromtimestamp(mtime).strftime('%a, %d %b %Y %H:%M:%S GMT')
             }
         )
     return HTMLResponse(content="<h1>TradingAgents Web UI</h1><p>Templates nicht gefunden</p>")
