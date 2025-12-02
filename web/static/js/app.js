@@ -23,11 +23,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // Set default date to today
     dateInput.valueAsDate = new Date();
 
-    // Load saved configuration
+    // Load saved configuration and form data
     loadSavedConfig();
+    loadFormData();
 
     // Load providers on page load
     loadProviders();
+    
+    // Attach auto-save listeners
+    attachAutoSaveListeners();
 
     // Depth slider update
     depthSlider.addEventListener('input', function() {
@@ -309,6 +313,92 @@ document.addEventListener('DOMContentLoaded', function() {
         errorState.style.display = 'block';
         document.getElementById('errorMessage').textContent = message;
         document.getElementById('analyzeBtn').disabled = false;
+    }
+    
+    // Auto-save form data to localStorage
+    let formSaveTimeout;
+    function saveFormData() {
+        const formData = {
+            ticker: document.getElementById('ticker').value,
+            date: document.getElementById('date').value,
+            provider: providerSelect.value,
+            quickModel: quickModelSelect.value,
+            deepModel: deepModelSelect.value,
+            depth: depthSlider.value,
+            discordWebhook: discordWebhookInput.value,
+            discordNotify: document.getElementById('discordNotify').checked,
+            analystMarket: document.getElementById('analystMarket').checked,
+            analystSocial: document.getElementById('analystSocial').checked,
+            analystNews: document.getElementById('analystNews').checked,
+            analystFundamentals: document.getElementById('analystFundamentals').checked
+        };
+        localStorage.setItem('tradingagents_formdata', JSON.stringify(formData));
+    }
+
+    function loadFormData() {
+        const savedData = localStorage.getItem('tradingagents_formdata');
+        if (savedData) {
+            try {
+                const formData = JSON.parse(savedData);
+                
+                if (formData.ticker) document.getElementById('ticker').value = formData.ticker;
+                if (formData.date) document.getElementById('date').value = formData.date;
+                if (formData.discordWebhook) discordWebhookInput.value = formData.discordWebhook;
+                if (formData.discordNotify !== undefined) document.getElementById('discordNotify').checked = formData.discordNotify;
+                if (formData.depth) {
+                    depthSlider.value = formData.depth;
+                    depthValue.textContent = formData.depth;
+                }
+                
+                // Analysten wiederherstellen
+                if (formData.analystMarket !== undefined) document.getElementById('analystMarket').checked = formData.analystMarket;
+                if (formData.analystSocial !== undefined) document.getElementById('analystSocial').checked = formData.analystSocial;
+                if (formData.analystNews !== undefined) document.getElementById('analystNews').checked = formData.analystNews;
+                if (formData.analystFundamentals !== undefined) document.getElementById('analystFundamentals').checked = formData.analystFundamentals;
+                
+                // Provider und Modelle werden nach dem Laden der Provider gesetzt
+                if (formData.provider) {
+                    setTimeout(() => {
+                        providerSelect.value = formData.provider;
+                        loadModels(formData.provider);
+                        
+                        setTimeout(() => {
+                            if (formData.quickModel) quickModelSelect.value = formData.quickModel;
+                            if (formData.deepModel) deepModelSelect.value = formData.deepModel;
+                        }, 200);
+                    }, 200);
+                }
+            } catch (e) {
+                console.error('Fehler beim Laden der Formulardaten:', e);
+            }
+        }
+    }
+
+    function attachAutoSaveListeners() {
+        const formElements = [
+            'ticker', 'date', 'discordWebhook', 'discordNotify',
+            'analystMarket', 'analystSocial', 'analystNews', 'analystFundamentals'
+        ];
+        
+        formElements.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.addEventListener('input', () => {
+                    clearTimeout(formSaveTimeout);
+                    formSaveTimeout = setTimeout(saveFormData, 500);
+                });
+                element.addEventListener('change', saveFormData);
+            }
+        });
+        
+        // Zusätzliche Listener für selects und slider
+        providerSelect.addEventListener('change', saveFormData);
+        quickModelSelect.addEventListener('change', saveFormData);
+        deepModelSelect.addEventListener('change', saveFormData);
+        depthSlider.addEventListener('input', () => {
+            clearTimeout(formSaveTimeout);
+            formSaveTimeout = setTimeout(saveFormData, 500);
+        });
     }
 
     // WebSocket connection for live updates (optional)
