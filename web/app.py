@@ -403,32 +403,51 @@ async def save_config(request: dict):
     env_path = Path(__file__).parent.parent / ".env"
     
     try:
-        # Read existing .env content
-        existing_lines = []
+        print(f"\n📝 Speichere Konfiguration nach: {env_path}")
+        print(f"   Empfangene Daten: {list(request.keys())}")
+        
         keys_to_update = {
-            "OPENAI_API_KEY": request.get("openai_api_key", ""),
-            "ALPHA_VANTAGE_API_KEY": request.get("alpha_vantage_api_key", ""),
-            "DISCORD_WEBHOOK_URL": request.get("discord_webhook", "")
+            "OPENAI_API_KEY": request.get("openai_api_key", "").strip(),
+            "ALPHA_VANTAGE_API_KEY": request.get("alpha_vantage_api_key", "").strip(),
+            "DISCORD_WEBHOOK_URL": request.get("discord_webhook", "").strip()
         }
         
+        # Debug: Zeige was gespeichert wird
+        for key, value in keys_to_update.items():
+            if value:
+                print(f"   {key}: {'*' * min(len(value), 20)}")
+            else:
+                print(f"   {key}: (leer)")
+        
+        # Read existing .env content (preserve non-API lines)
+        existing_lines = []
+        existing_keys = set()
+        
         if env_path.exists():
+            print(f"   ✓ .env existiert bereits, lese bestehende Zeilen...")
             with open(env_path, 'r') as f:
                 for line in f:
                     line_stripped = line.strip()
-                    if line_stripped and not line_stripped.startswith('#'):
-                        if '=' in line_stripped:
-                            key = line_stripped.split('=', 1)[0].strip()
-                            if key not in keys_to_update:
-                                existing_lines.append(line)
-                    else:
-                        # Keep comments and empty lines
-                        if not any(k in line_stripped for k in keys_to_update.keys()):
-                            existing_lines.append(line)
+                    # Check if this line contains one of our keys
+                    is_api_key_line = False
+                    if '=' in line_stripped and not line_stripped.startswith('#'):
+                        key = line_stripped.split('=', 1)[0].strip()
+                        if key in keys_to_update:
+                            is_api_key_line = True
+                            existing_keys.add(key)
+                    
+                    # Keep the line if it's not an API key we're updating
+                    if not is_api_key_line:
+                        existing_lines.append(line)
+            print(f"   Gefundene Keys: {existing_keys}")
+        else:
+            print(f"   ℹ .env existiert nicht, erstelle neu...")
         
         # Write updated .env
+        print(f"   Schreibe aktualisierte .env...")
         with open(env_path, 'w') as f:
             # Write header if new file
-            if not existing_lines:
+            if not existing_lines or env_path.stat().st_size == 0:
                 f.write("# TradingAgents Configuration\n")
                 f.write(f"# Generated: {datetime.now().isoformat()}\n\n")
             
@@ -436,24 +455,39 @@ async def save_config(request: dict):
             for line in existing_lines:
                 f.write(line)
             
-            # Write API keys
+            # Ensure newline before API keys section
             if existing_lines and not existing_lines[-1].endswith('\n'):
                 f.write("\n")
+            
+            # Write API keys section
             f.write("\n# API Keys (updated via Web UI)\n")
             for key, value in keys_to_update.items():
-                if value:
+                if value:  # Only write non-empty values
                     f.write(f'{key}="{value}"\n')
+                    print(f"   ✓ Geschrieben: {key}")
         
-        print(f"✓ Configuration saved to {env_path}")
-        print(f"  - OpenAI Key: {'***' if request.get('openai_api_key') else 'not set'}")
-        print(f"  - Alpha Vantage Key: {'***' if request.get('alpha_vantage_api_key') else 'not set'}")
-        print(f"  - Discord Webhook: {'***' if request.get('discord_webhook') else 'not set'}")
+        # Verify file was written
+        if env_path.exists():
+            file_size = env_path.stat().st_size
+            print(f"   ✅ Datei geschrieben: {file_size} bytes")
+            
+            # Read back and verify
+            with open(env_path, 'r') as f:
+                content = f.read()
+                for key in keys_to_update.keys():
+                    if keys_to_update[key] and key in content:
+                        print(f"   ✓ Verifiziert: {key} ist in der Datei")
+        else:
+            print(f"   ❌ Datei wurde NICHT erstellt!")
         
-        return {"success": True, "message": "Konfiguration gespeichert"}
+        return {"success": True, "message": "Konfiguration erfolgreich gespeichert"}
     
     except Exception as e:
-        print(f"✗ Error saving config: {e}")
-        return {"success": False, "message": f"Fehler beim Speichern: {str(e)}"}
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"\n❌ Fehler beim Speichern der Konfiguration:")
+        print(error_details)
+        return {"success": False, "message": f"Fehler: {str(e)}"}
 
 
 @app.get("/api/health")

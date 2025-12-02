@@ -518,27 +518,41 @@
 
                 const poll = async () => {
                     try {
+                        console.log(`📊 Polling Versuch ${attempts + 1}/${maxAttempts} für ID: ${analysisId}`);
                         const response = await fetch(`/api/analysis/${analysisId}`);
+                        
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                        }
+                        
                         const data = await response.json();
+                        console.log('📥 Polling-Antwort:', data);
 
                         if (data.status === 'completed' && data.success) {
+                            console.log('✅ Analyse abgeschlossen!');
                             showResults(data.result);
                             return;
-                        } else if (data.status === 'error' || !data.success) {
+                        } else if (data.status === 'error' || (!data.success && data.status !== 'running')) {
+                            console.error('❌ Analyse-Fehler:', data);
                             showError(data.message || 'Fehler bei der Analyse');
                             return;
                         } else if (data.status === 'running') {
                             attempts++;
+                            console.log(`⏳ Analyse läuft noch... (${attempts}/${maxAttempts})`);
                             if (attempts >= maxAttempts) {
+                                console.error('⏱️ Timeout erreicht');
                                 showError('Timeout: Analyse dauert zu lange');
                                 return;
                             }
+                            // Update status text
+                            statusText.textContent = `Analyse läuft... (${attempts} Sek.)`;
                             setTimeout(poll, 1000);
                         } else {
+                            console.error('❓ Unbekannter Status:', data.status);
                             showError('Unbekannter Status: ' + data.status);
                         }
                     } catch (error) {
-                        console.error('Polling error:', error);
+                        console.error('❌ Polling-Fehler:', error);
                         showError('Fehler beim Abrufen der Ergebnisse: ' + error.message);
                     }
                 };
@@ -557,7 +571,15 @@
             }
 
             // Simulate progress
+            let progressInterval = null;
             function simulateProgress() {
+                console.log('🎬 Starte Progress-Animation');
+                
+                // Clear any existing interval
+                if (progressInterval) {
+                    clearInterval(progressInterval);
+                }
+                
                 const stages = [
                     { percent: 10, text: 'Verbindung zum LLM-Provider...' },
                     { percent: 25, text: 'Analysten werden initialisiert...' },
@@ -568,20 +590,34 @@
                 ];
 
                 let currentStage = 0;
-                const interval = setInterval(() => {
+                progressInterval = setInterval(() => {
                     if (currentStage < stages.length) {
                         const stage = stages[currentStage];
                         progressFill.style.width = stage.percent + '%';
-                        statusText.textContent = stage.text;
+                        console.log(`📊 Progress: ${stage.percent}% - ${stage.text}`);
+                        // Don't overwrite polling status
+                        if (!statusText.textContent.includes('läuft...')) {
+                            statusText.textContent = stage.text;
+                        }
                         currentStage++;
                     } else {
-                        clearInterval(interval);
+                        clearInterval(progressInterval);
+                        progressInterval = null;
+                        console.log('✓ Progress-Animation abgeschlossen');
                     }
-                }, 2000);
+                }, 3000);
             }
 
             // Show results
             function showResults(result) {
+                console.log('🎉 Zeige Ergebnisse:', result);
+                
+                // Stop progress animation
+                if (progressInterval) {
+                    clearInterval(progressInterval);
+                    progressInterval = null;
+                }
+                
                 loadingState.style.display = 'none';
                 errorState.style.display = 'none';
                 resultsContent.style.display = 'block';
@@ -590,25 +626,38 @@
                 let decision = 'HALTEN';
                 let decisionClass = 'hold';
                 
-                if (result.decision) {
+                if (result && result.decision) {
                     const decisionText = result.decision.toLowerCase();
+                    console.log('📊 Entscheidungstext:', decisionText);
+                    
                     if (decisionText.includes('kaufen') || decisionText.includes('buy')) {
                         decision = 'KAUFEN';
                         decisionClass = 'buy';
                     } else if (decisionText.includes('verkaufen') || decisionText.includes('sell')) {
                         decision = 'VERKAUFEN';
                         decisionClass = 'sell';
+                    } else if (decisionText.includes('halten') || decisionText.includes('hold')) {
+                        decision = 'HALTEN';
+                        decisionClass = 'hold';
                     }
+                    
+                    console.log(`✅ Finale Entscheidung: ${decision} (${decisionClass})`);
+                } else {
+                    console.warn('⚠️ Keine Entscheidung in den Ergebnissen gefunden');
                 }
 
                 resultsContent.innerHTML = `
                     <div class="result-card">
-                        <h3><i class="fas fa-chart-line"></i> Handelsentscheidung</h3>
+                        <h3><i class="fas fa-chart-line"></i> Handelsentscheidung für ${result.ticker || 'N/A'}</h3>
                         <div class="decision ${decisionClass}">
                             ${decision}
                         </div>
+                        <div class="result-info">
+                            <p><strong>Datum:</strong> ${result.date || 'N/A'}</p>
+                        </div>
                         <div class="result-details">
-                            <pre>${JSON.stringify(result, null, 2)}</pre>
+                            <h4>Vollständige Analyse:</h4>
+                            <pre>${result.full_analysis || JSON.stringify(result, null, 2)}</pre>
                         </div>
                     </div>
                 `;
