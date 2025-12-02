@@ -19,22 +19,22 @@ def create_research_manager(llm, memory):
         for i, rec in enumerate(past_memories, 1):
             past_memory_str += rec["recommendation"] + "\n\n"
 
-        prompt = f"""As the portfolio manager and debate facilitator, your role is to critically evaluate this round of debate and make a definitive decision: align with the bear analyst, the bull analyst, or choose Hold only if it is strongly justified based on the arguments presented.
+        prompt = f"""Als Portfoliomanager und Debattenleiter ist es Ihre Aufgabe, diese Debattenrunde kritisch zu bewerten und eine endgültige Entscheidung zu treffen: Stimmen Sie mit dem Bärenanalysten, dem Bull-Analysten überein oder wählen Sie Halten nur, wenn dies basierend auf den präsentierten Argumenten stark gerechtfertigt ist.
 
-Summarize the key points from both sides concisely, focusing on the most compelling evidence or reasoning. Your recommendation—Buy, Sell, or Hold—must be clear and actionable. Avoid defaulting to Hold simply because both sides have valid points; commit to a stance grounded in the debate's strongest arguments.
+Fassen Sie die wichtigsten Punkte beider Seiten prägnant zusammen und konzentrieren Sie sich auf die überzeugendsten Beweise oder Argumente. Ihre Empfehlung – Kaufen, Verkaufen oder Halten – muss klar und umsetzbar sein. Vermeiden Sie es, standardmäßig Halten zu wählen, nur weil beide Seiten gültige Punkte haben; verpflichten Sie sich auf eine Haltung, die auf den stärksten Argumenten der Debatte basiert.
 
-Additionally, develop a detailed investment plan for the trader. This should include:
+Entwickeln Sie zusätzlich einen detaillierten Investitionsplan für den Händler. Dieser sollte umfassen:
 
-Your Recommendation: A decisive stance supported by the most convincing arguments.
-Rationale: An explanation of why these arguments lead to your conclusion.
-Strategic Actions: Concrete steps for implementing the recommendation.
-Take into account your past mistakes on similar situations. Use these insights to refine your decision-making and ensure you are learning and improving. Present your analysis conversationally, as if speaking naturally, without special formatting. 
+Ihre Empfehlung: Eine entschiedene Haltung, die von den überzeugendsten Argumenten gestützt wird.
+Begründung: Eine Erklärung, warum diese Argumente zu Ihrer Schlussfolgerung führen.
+Strategische Maßnahmen: Konkrete Schritte zur Umsetzung der Empfehlung.
+Berücksichtigen Sie Ihre früheren Fehler in ähnlichen Situationen. Nutzen Sie diese Erkenntnisse, um Ihre Entscheidungsfindung zu verfeinern und sicherzustellen, dass Sie lernen und sich verbessern. Präsentieren Sie Ihre Analyse gesprächig, als würden Sie natürlich sprechen, ohne spezielle Formatierung. 
 
-Here are your past reflections on mistakes:
+Hier sind Ihre früheren Reflexionen über Fehler:
 \"{past_memory_str}\"
 
-Here is the debate:
-Debate History:
+Hier ist die Debatte:
+Debattenverlauf:
 {history}"""
         response = llm.invoke(prompt)
 

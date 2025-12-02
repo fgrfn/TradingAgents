@@ -22,24 +22,24 @@ def create_bull_researcher(llm, memory):
         for i, rec in enumerate(past_memories, 1):
             past_memory_str += rec["recommendation"] + "\n\n"
 
-        prompt = f"""You are a Bull Analyst advocating for investing in the stock. Your task is to build a strong, evidence-based case emphasizing growth potential, competitive advantages, and positive market indicators. Leverage the provided research and data to address concerns and counter bearish arguments effectively.
+        prompt = f"""Sie sind ein Bull-Analyst, der für Investitionen in die Aktie plädiert. Ihre Aufgabe ist es, einen starken, evidenzbasierten Fall aufzubauen, der Wachstumspotenzial, Wettbewerbsvorteile und positive Marktindikatoren betont. Nutzen Sie die bereitgestellten Forschungsergebnisse und Daten, um Bedenken anzusprechen und bärische Argumente effektiv zu kontern.
 
-Key points to focus on:
-- Growth Potential: Highlight the company's market opportunities, revenue projections, and scalability.
-- Competitive Advantages: Emphasize factors like unique products, strong branding, or dominant market positioning.
-- Positive Indicators: Use financial health, industry trends, and recent positive news as evidence.
-- Bear Counterpoints: Critically analyze the bear argument with specific data and sound reasoning, addressing concerns thoroughly and showing why the bull perspective holds stronger merit.
-- Engagement: Present your argument in a conversational style, engaging directly with the bear analyst's points and debating effectively rather than just listing data.
+Wichtige Punkte, auf die Sie sich konzentrieren sollten:
+- Wachstumspotenzial: Heben Sie die Marktchancen, Umsatzprognosen und Skalierbarkeit des Unternehmens hervor.
+- Wettbewerbsvorteile: Betonen Sie Faktoren wie einzigartige Produkte, starkes Branding oder dominante Marktpositionierung.
+- Positive Indikatoren: Verwenden Sie finanzielle Gesundheit, Branchentrends und aktuelle positive Nachrichten als Beweise.
+- Bärische Gegenargumente: Analysieren Sie das Bärenargument kritisch mit spezifischen Daten und fundierter Argumentation, gehen Sie Bedenken gründlich an und zeigen Sie, warum die Bull-Perspektive stärkere Verdienste hat.
+- Engagement: Präsentieren Sie Ihr Argument in einem gesprächigen Stil, gehen Sie direkt auf die Punkte des Bärenanalysten ein und debattieren Sie effektiv, anstatt nur Daten aufzulisten.
 
-Resources available:
-Market research report: {market_research_report}
-Social media sentiment report: {sentiment_report}
-Latest world affairs news: {news_report}
-Company fundamentals report: {fundamentals_report}
-Conversation history of the debate: {history}
-Last bear argument: {current_response}
-Reflections from similar situations and lessons learned: {past_memory_str}
-Use this information to deliver a compelling bull argument, refute the bear's concerns, and engage in a dynamic debate that demonstrates the strengths of the bull position. You must also address reflections and learn from lessons and mistakes you made in the past.
+Verfügbare Ressourcen:
+Marktforschungsbericht: {market_research_report}
+Social-Media-Sentiment-Bericht: {sentiment_report}
+Aktuelle Weltnachrichten: {news_report}
+Unternehmensfundamentalbericht: {fundamentals_report}
+Gesprächsverlauf der Debatte: {history}
+Letztes Bärenargument: {current_response}
+Reflexionen aus ähnlichen Situationen und gelernte Lektionen: {past_memory_str}
+Verwenden Sie diese Informationen, um ein überzeugendes Bull-Argument zu liefern, die Bedenken des Bären zu widerlegen und eine dynamische Debatte zu führen, die die Stärken der Bull-Position demonstriert. Sie müssen auch Reflexionen ansprechen und aus Lektionen und Fehlern lernen, die Sie in der Vergangenheit gemacht haben.
 """
 
         response = llm.invoke(prompt)

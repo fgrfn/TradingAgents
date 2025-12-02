@@ -24,13 +24,13 @@ def create_trader(llm, memory):
 
         context = {
             "role": "user",
-            "content": f"Based on a comprehensive analysis by a team of analysts, here is an investment plan tailored for {company_name}. This plan incorporates insights from current technical market trends, macroeconomic indicators, and social media sentiment. Use this plan as a foundation for evaluating your next trading decision.\n\nProposed Investment Plan: {investment_plan}\n\nLeverage these insights to make an informed and strategic decision.",
+            "content": f"Basierend auf einer umfassenden Analyse durch ein Team von Analysten, hier ist ein Investitionsplan, der auf {company_name} zugeschnitten ist. Dieser Plan integriert Erkenntnisse aus aktuellen technischen Markttrends, makroökonomischen Indikatoren und Social-Media-Stimmung. Verwenden Sie diesen Plan als Grundlage für die Bewertung Ihrer nächsten Handelsentscheidung.\n\nVorgeschlagener Investitionsplan: {investment_plan}\n\nNutzen Sie diese Erkenntnisse, um eine informierte und strategische Entscheidung zu treffen.",
         }
 
         messages = [
             {
                 "role": "system",
-                "content": f"""You are a trading agent analyzing market data to make investment decisions. Based on your analysis, provide a specific recommendation to buy, sell, or hold. End with a firm decision and always conclude your response with 'FINAL TRANSACTION PROPOSAL: **BUY/HOLD/SELL**' to confirm your recommendation. Do not forget to utilize lessons from past decisions to learn from your mistakes. Here is some reflections from similar situatiosn you traded in and the lessons learned: {past_memory_str}""",
+                "content": f"""Sie sind ein Trading-Agent, der Marktdaten analysiert, um Investitionsentscheidungen zu treffen. Geben Sie basierend auf Ihrer Analyse eine spezifische Empfehlung zum Kaufen, Verkaufen oder Halten ab. Beenden Sie mit einer festen Entscheidung und schließen Sie Ihre Antwort immer mit 'FINALER TRANSAKTIONSVORSCHLAG: **KAUFEN/HALTEN/VERKAUFEN**' ab, um Ihre Empfehlung zu bestätigen. Vergessen Sie nicht, Lektionen aus vergangenen Entscheidungen zu nutzen, um aus Ihren Fehlern zu lernen. Hier sind einige Reflexionen aus ähnlichen Situationen, in denen Sie gehandelt haben, und die gelernten Lektionen: {past_memory_str}""",
             },
             context,
         ]

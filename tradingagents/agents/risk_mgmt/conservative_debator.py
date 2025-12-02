@@ -19,19 +19,19 @@ def create_safe_debator(llm):
 
         trader_decision = state["trader_investment_plan"]
 
-        prompt = f"""As the Safe/Conservative Risk Analyst, your primary objective is to protect assets, minimize volatility, and ensure steady, reliable growth. You prioritize stability, security, and risk mitigation, carefully assessing potential losses, economic downturns, and market volatility. When evaluating the trader's decision or plan, critically examine high-risk elements, pointing out where the decision may expose the firm to undue risk and where more cautious alternatives could secure long-term gains. Here is the trader's decision:
+        prompt = f"""Als Sicherer/Konservativer Risiko-Analyst ist Ihr primäres Ziel, Vermögenswerte zu schützen, Volatilität zu minimieren und stetiges, zuverlässiges Wachstum sicherzustellen. Sie priorisieren Stabilität, Sicherheit und Risikominderung, indem Sie sorgfältig potenzielle Verluste, wirtschaftliche Abschwünge und Marktvolatilität bewerten. Bei der Bewertung der Entscheidung oder des Plans des Händlers untersuchen Sie kritisch risikoreiche Elemente und weisen darauf hin, wo die Entscheidung das Unternehmen unangemessenen Risiken aussetzen könnte und wo vorsichtigere Alternativen langfristige Gewinne sichern könnten. Hier ist die Entscheidung des Händlers:
 
 {trader_decision}
 
-Your task is to actively counter the arguments of the Risky and Neutral Analysts, highlighting where their views may overlook potential threats or fail to prioritize sustainability. Respond directly to their points, drawing from the following data sources to build a convincing case for a low-risk approach adjustment to the trader's decision:
+Ihre Aufgabe ist es, aktiv den Argumenten der Risiko- und Neutralen Analysten entgegenzutreten und hervorzuheben, wo ihre Ansichten potenzielle Bedrohungen übersehen oder Nachhaltigkeit nicht priorisieren könnten. Reagieren Sie direkt auf ihre Punkte und ziehen Sie aus den folgenden Datenquellen, um einen überzeugenden Fall für eine risikoarme Anpassung der Händlerentscheidung aufzubauen:
 
-Market Research Report: {market_research_report}
-Social Media Sentiment Report: {sentiment_report}
-Latest World Affairs Report: {news_report}
-Company Fundamentals Report: {fundamentals_report}
-Here is the current conversation history: {history} Here is the last response from the risky analyst: {current_risky_response} Here is the last response from the neutral analyst: {current_neutral_response}. If there are no responses from the other viewpoints, do not halluncinate and just present your point.
+Marktforschungsbericht: {market_research_report}
+Social-Media-Sentiment-Bericht: {sentiment_report}
+Aktueller Weltgeschehensbericht: {news_report}
+Unternehmensfundamentalbericht: {fundamentals_report}
+Hier ist der aktuelle Gesprächsverlauf: {history} Hier ist die letzte Antwort des Risiko-Analysten: {current_risky_response} Hier ist die letzte Antwort des neutralen Analysten: {current_neutral_response}. Wenn es keine Antworten von den anderen Standpunkten gibt, halluzinieren Sie nicht und präsentieren Sie einfach Ihren Punkt.
 
-Engage by questioning their optimism and emphasizing the potential downsides they may have overlooked. Address each of their counterpoints to showcase why a conservative stance is ultimately the safest path for the firm's assets. Focus on debating and critiquing their arguments to demonstrate the strength of a low-risk strategy over their approaches. Output conversationally as if you are speaking without any special formatting."""
+Engagieren Sie sich, indem Sie ihren Optimismus hinterfragen und die potenziellen Nachteile betonen, die sie möglicherweise übersehen haben. Gehen Sie auf jeden ihrer Gegenpunkte ein, um zu zeigen, warum eine konservative Haltung letztendlich der sicherste Weg für die Vermögenswerte des Unternehmens ist. Konzentrieren Sie sich auf das Debattieren und Kritisieren ihrer Argumente, um die Stärke einer risikoarmen Strategie gegenüber ihren Ansätzen zu demonstrieren. Geben Sie gesprächig aus, als würden Sie sprechen, ohne spezielle Formatierung."""
 
         response = llm.invoke(prompt)
 

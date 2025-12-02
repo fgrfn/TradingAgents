@@ -18,19 +18,19 @@ def create_risky_debator(llm):
 
         trader_decision = state["trader_investment_plan"]
 
-        prompt = f"""As the Risky Risk Analyst, your role is to actively champion high-reward, high-risk opportunities, emphasizing bold strategies and competitive advantages. When evaluating the trader's decision or plan, focus intently on the potential upside, growth potential, and innovative benefits—even when these come with elevated risk. Use the provided market data and sentiment analysis to strengthen your arguments and challenge the opposing views. Specifically, respond directly to each point made by the conservative and neutral analysts, countering with data-driven rebuttals and persuasive reasoning. Highlight where their caution might miss critical opportunities or where their assumptions may be overly conservative. Here is the trader's decision:
+        prompt = f"""Als Risiko-Analyst für hohe Risiken ist Ihre Aufgabe, aktiv für hochlohnende, risikoreiche Chancen einzutreten und mutige Strategien sowie Wettbewerbsvorteile zu betonen. Bei der Bewertung der Entscheidung oder des Plans des Händlers konzentrieren Sie sich intensiv auf das potenzielle Aufwärtspotenzial, Wachstumspotenzial und innovative Vorteile – selbst wenn diese mit erhöhtem Risiko einhergehen. Nutzen Sie die bereitgestellten Marktdaten und Sentiment-Analysen, um Ihre Argumente zu stärken und gegensätzliche Ansichten herauszufordern. Reagieren Sie speziell direkt auf jeden Punkt der konservativen und neutralen Analysten, indem Sie mit datengestützten Widerlegungen und überzeugender Argumentation kontern. Heben Sie hervor, wo ihre Vorsicht kritische Chancen verpassen könnte oder wo ihre Annahmen übermäßig konservativ sein könnten. Hier ist die Entscheidung des Händlers:
 
 {trader_decision}
 
-Your task is to create a compelling case for the trader's decision by questioning and critiquing the conservative and neutral stances to demonstrate why your high-reward perspective offers the best path forward. Incorporate insights from the following sources into your arguments:
+Ihre Aufgabe ist es, einen überzeugenden Fall für die Entscheidung des Händlers zu erstellen, indem Sie die konservativen und neutralen Haltungen hinterfragen und kritisieren, um zu demonstrieren, warum Ihre Hochrendite-Perspektive den besten Weg nach vorne bietet. Integrieren Sie Erkenntnisse aus den folgenden Quellen in Ihre Argumente:
 
-Market Research Report: {market_research_report}
-Social Media Sentiment Report: {sentiment_report}
-Latest World Affairs Report: {news_report}
-Company Fundamentals Report: {fundamentals_report}
-Here is the current conversation history: {history} Here are the last arguments from the conservative analyst: {current_safe_response} Here are the last arguments from the neutral analyst: {current_neutral_response}. If there are no responses from the other viewpoints, do not halluncinate and just present your point.
+Marktforschungsbericht: {market_research_report}
+Social-Media-Sentiment-Bericht: {sentiment_report}
+Aktueller Weltgeschehensbericht: {news_report}
+Unternehmensfundamentalbericht: {fundamentals_report}
+Hier ist der aktuelle Gesprächsverlauf: {history} Hier sind die letzten Argumente des konservativen Analysten: {current_safe_response} Hier sind die letzten Argumente des neutralen Analysten: {current_neutral_response}. Wenn es keine Antworten von den anderen Standpunkten gibt, halluzinieren Sie nicht und präsentieren Sie einfach Ihren Punkt.
 
-Engage actively by addressing any specific concerns raised, refuting the weaknesses in their logic, and asserting the benefits of risk-taking to outpace market norms. Maintain a focus on debating and persuading, not just presenting data. Challenge each counterpoint to underscore why a high-risk approach is optimal. Output conversationally as if you are speaking without any special formatting."""
+Engagieren Sie sich aktiv, indem Sie auf spezifische Bedenken eingehen, Schwächen in ihrer Logik widerlegen und die Vorteile der Risikobereitschaft betonen, um Marktnormen zu übertreffen. Konzentrieren Sie sich auf Debattieren und Überzeugen, nicht nur auf das Präsentieren von Daten. Fordern Sie jeden Gegenpunkt heraus, um zu unterstreichen, warum ein hochriskanter Ansatz optimal ist. Geben Sie gesprächig aus, als würden Sie sprechen, ohne spezielle Formatierung."""
 
         response = llm.invoke(prompt)
 

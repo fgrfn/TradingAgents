@@ -4,18 +4,18 @@ from typing import List, Optional, Tuple, Dict
 from cli.models import AnalystType
 
 ANALYST_ORDER = [
-    ("Market Analyst", AnalystType.MARKET),
+    ("Marktanalyst", AnalystType.MARKET),
     ("Social Media Analyst", AnalystType.SOCIAL),
-    ("News Analyst", AnalystType.NEWS),
-    ("Fundamentals Analyst", AnalystType.FUNDAMENTALS),
+    ("Nachrichtenanalyst", AnalystType.NEWS),
+    ("Fundamentalanalyst", AnalystType.FUNDAMENTALS),
 ]
 
 
 def get_ticker() -> str:
-    """Prompt the user to enter a ticker symbol."""
+    """Fordert den Benutzer auf, ein Ticker-Symbol einzugeben."""
     ticker = questionary.text(
-        "Enter the ticker symbol to analyze:",
-        validate=lambda x: len(x.strip()) > 0 or "Please enter a valid ticker symbol.",
+        "Geben Sie das zu analysierende Ticker-Symbol ein:",
+        validate=lambda x: len(x.strip()) > 0 or "Bitte geben Sie ein gültiges Ticker-Symbol ein.",
         style=questionary.Style(
             [
                 ("text", "fg:green"),
@@ -25,14 +25,14 @@ def get_ticker() -> str:
     ).ask()
 
     if not ticker:
-        console.print("\n[red]No ticker symbol provided. Exiting...[/red]")
+        console.print("\n[red]Kein Ticker-Symbol angegeben. Programm wird beendet...[/red]")
         exit(1)
 
     return ticker.strip().upper()
 
 
 def get_analysis_date() -> str:
-    """Prompt the user to enter a date in YYYY-MM-DD format."""
+    """Fordert den Benutzer auf, ein Datum im Format JJJJ-MM-TT einzugeben."""
     import re
     from datetime import datetime
 
@@ -46,9 +46,9 @@ def get_analysis_date() -> str:
             return False
 
     date = questionary.text(
-        "Enter the analysis date (YYYY-MM-DD):",
+        "Geben Sie das Analysedatum ein (JJJJ-MM-TT):",
         validate=lambda x: validate_date(x.strip())
-        or "Please enter a valid date in YYYY-MM-DD format.",
+        or "Bitte geben Sie ein gültiges Datum im Format JJJJ-MM-TT ein.",
         style=questionary.Style(
             [
                 ("text", "fg:green"),
@@ -58,21 +58,21 @@ def get_analysis_date() -> str:
     ).ask()
 
     if not date:
-        console.print("\n[red]No date provided. Exiting...[/red]")
+        console.print("\n[red]Kein Datum angegeben. Programm wird beendet...[/red]")
         exit(1)
 
     return date.strip()
 
 
 def select_analysts() -> List[AnalystType]:
-    """Select analysts using an interactive checkbox."""
+    """Wählt Analysten über eine interaktive Checkbox aus."""
     choices = questionary.checkbox(
-        "Select Your [Analysts Team]:",
+        "Wählen Sie Ihr [Analysten-Team]:",
         choices=[
             questionary.Choice(display, value=value) for display, value in ANALYST_ORDER
         ],
-        instruction="\n- Press Space to select/unselect analysts\n- Press 'a' to select/unselect all\n- Press Enter when done",
-        validate=lambda x: len(x) > 0 or "You must select at least one analyst.",
+        instruction="\n- Drücken Sie Leertaste zum Auswählen/Abwählen\n- Drücken Sie 'a' zum Auswählen/Abwählen aller\n- Drücken Sie Enter zum Bestätigen",
+        validate=lambda x: len(x) > 0 or "Sie müssen mindestens einen Analysten auswählen.",
         style=questionary.Style(
             [
                 ("checkbox-selected", "fg:green"),
@@ -84,28 +84,28 @@ def select_analysts() -> List[AnalystType]:
     ).ask()
 
     if not choices:
-        console.print("\n[red]No analysts selected. Exiting...[/red]")
+        console.print("\n[red]Keine Analysten ausgewählt. Programm wird beendet...[/red]")
         exit(1)
 
     return choices
 
 
 def select_research_depth() -> int:
-    """Select research depth using an interactive selection."""
+    """Wählt die Recherchetiefe über eine interaktive Auswahl aus."""
 
-    # Define research depth options with their corresponding values
+    # Definiere Recherchetiefe-Optionen mit ihren zugehörigen Werten
     DEPTH_OPTIONS = [
-        ("Shallow - Quick research, few debate and strategy discussion rounds", 1),
-        ("Medium - Middle ground, moderate debate rounds and strategy discussion", 3),
-        ("Deep - Comprehensive research, in depth debate and strategy discussion", 5),
+        ("Oberflächlich - Schnelle Recherche, wenige Debatten- und Strategiediskussionsrunden", 1),
+        ("Mittel - Mittelweg, moderate Debatten- und Strategiediskussionsrunden", 3),
+        ("Tiefgehend - Umfassende Recherche, ausführliche Debatten und Strategiediskussionen", 5),
     ]
 
     choice = questionary.select(
-        "Select Your [Research Depth]:",
+        "Wählen Sie Ihre [Recherchetiefe]:",
         choices=[
             questionary.Choice(display, value=value) for display, value in DEPTH_OPTIONS
         ],
-        instruction="\n- Use arrow keys to navigate\n- Press Enter to select",
+        instruction="\n- Pfeiltasten zum Navigieren\n- Enter zum Bestätigen",
         style=questionary.Style(
             [
                 ("selected", "fg:yellow noinherit"),
@@ -116,52 +116,54 @@ def select_research_depth() -> int:
     ).ask()
 
     if choice is None:
-        console.print("\n[red]No research depth selected. Exiting...[/red]")
+        console.print("\n[red]Keine Recherchetiefe ausgewählt. Programm wird beendet...[/red]")
         exit(1)
 
     return choice
 
 
 def select_shallow_thinking_agent(provider) -> str:
-    """Select shallow thinking llm engine using an interactive selection."""
+    """Wählt eine schnell denkende LLM-Engine über eine interaktive Auswahl aus."""
 
-    # Define shallow thinking llm engine options with their corresponding model names
+    # Definiere Optionen für schnell denkende LLM-Engines mit ihren Modellnamen
     SHALLOW_AGENT_OPTIONS = {
         "openai": [
-            ("GPT-4o-mini - Fast and efficient for quick tasks", "gpt-4o-mini"),
-            ("GPT-4.1-nano - Ultra-lightweight model for basic operations", "gpt-4.1-nano"),
-            ("GPT-4.1-mini - Compact model with good performance", "gpt-4.1-mini"),
-            ("GPT-4o - Standard model with solid capabilities", "gpt-4o"),
+            ("GPT-4o-mini - Schnell und effizient für schnelle Aufgaben", "gpt-4o-mini"),
+            ("GPT-4.1-nano - Ultraleichtes Modell für grundlegende Operationen", "gpt-4.1-nano"),
+            ("GPT-4.1-mini - Kompaktes Modell mit guter Leistung", "gpt-4.1-mini"),
+            ("GPT-4o - Standardmodell mit soliden Fähigkeiten", "gpt-4o"),
+            ("GPT-5-mini - Kompaktes Next-Gen-Modell für schnelle Aufgaben", "gpt-5-mini"),
+            ("GPT-5 - Next-Generation-Modell mit erweiterten Fähigkeiten", "gpt-5"),
         ],
         "anthropic": [
-            ("Claude Haiku 3.5 - Fast inference and standard capabilities", "claude-3-5-haiku-latest"),
-            ("Claude Sonnet 3.5 - Highly capable standard model", "claude-3-5-sonnet-latest"),
-            ("Claude Sonnet 3.7 - Exceptional hybrid reasoning and agentic capabilities", "claude-3-7-sonnet-latest"),
-            ("Claude Sonnet 4 - High performance and excellent reasoning", "claude-sonnet-4-0"),
+            ("Claude Haiku 3.5 - Schnelle Inferenz und Standardfähigkeiten", "claude-3-5-haiku-latest"),
+            ("Claude Sonnet 3.5 - Hochleistungsfähiges Standardmodell", "claude-3-5-sonnet-latest"),
+            ("Claude Sonnet 3.7 - Außergewöhnliche hybride Reasoning- und Agentenfähigkeiten", "claude-3-7-sonnet-latest"),
+            ("Claude Sonnet 4 - Hohe Leistung und exzellentes Reasoning", "claude-sonnet-4-0"),
         ],
         "google": [
-            ("Gemini 2.0 Flash-Lite - Cost efficiency and low latency", "gemini-2.0-flash-lite"),
-            ("Gemini 2.0 Flash - Next generation features, speed, and thinking", "gemini-2.0-flash"),
-            ("Gemini 2.5 Flash - Adaptive thinking, cost efficiency", "gemini-2.5-flash-preview-05-20"),
+            ("Gemini 2.0 Flash-Lite - Kosteneffizienz und niedrige Latenz", "gemini-2.0-flash-lite"),
+            ("Gemini 2.0 Flash - Next-Gen-Features, Geschwindigkeit und Denken", "gemini-2.0-flash"),
+            ("Gemini 2.5 Flash - Adaptives Denken, Kosteneffizienz", "gemini-2.5-flash-preview-05-20"),
         ],
         "openrouter": [
             ("Meta: Llama 4 Scout", "meta-llama/llama-4-scout:free"),
-            ("Meta: Llama 3.3 8B Instruct - A lightweight and ultra-fast variant of Llama 3.3 70B", "meta-llama/llama-3.3-8b-instruct:free"),
-            ("google/gemini-2.0-flash-exp:free - Gemini Flash 2.0 offers a significantly faster time to first token", "google/gemini-2.0-flash-exp:free"),
+            ("Meta: Llama 3.3 8B Instruct - Leichtgewichtige und ultraschnelle Variante von Llama 3.3 70B", "meta-llama/llama-3.3-8b-instruct:free"),
+            ("google/gemini-2.0-flash-exp:free - Gemini Flash 2.0 bietet deutlich schnellere Zeit bis zum ersten Token", "google/gemini-2.0-flash-exp:free"),
         ],
         "ollama": [
-            ("llama3.1 local", "llama3.1"),
-            ("llama3.2 local", "llama3.2"),
+            ("llama3.1 lokal", "llama3.1"),
+            ("llama3.2 lokal", "llama3.2"),
         ]
     }
 
     choice = questionary.select(
-        "Select Your [Quick-Thinking LLM Engine]:",
+        "Wählen Sie Ihre [Schnell-Denkende LLM-Engine]:",
         choices=[
             questionary.Choice(display, value=value)
             for display, value in SHALLOW_AGENT_OPTIONS[provider.lower()]
         ],
-        instruction="\n- Use arrow keys to navigate\n- Press Enter to select",
+        instruction="\n- Pfeiltasten zum Navigieren\n- Enter zum Bestätigen",
         style=questionary.Style(
             [
                 ("selected", "fg:magenta noinherit"),
@@ -173,7 +175,7 @@ def select_shallow_thinking_agent(provider) -> str:
 
     if choice is None:
         console.print(
-            "\n[red]No shallow thinking llm engine selected. Exiting...[/red]"
+            "\n[red]Keine schnell denkende LLM-Engine ausgewählt. Programm wird beendet...[/red]"
         )
         exit(1)
 
@@ -181,49 +183,52 @@ def select_shallow_thinking_agent(provider) -> str:
 
 
 def select_deep_thinking_agent(provider) -> str:
-    """Select deep thinking llm engine using an interactive selection."""
+    """Wählt eine tiefgehend denkende LLM-Engine über eine interaktive Auswahl aus."""
 
-    # Define deep thinking llm engine options with their corresponding model names
+    # Definiere Optionen für tiefgehend denkende LLM-Engines mit ihren Modellnamen
     DEEP_AGENT_OPTIONS = {
         "openai": [
-            ("GPT-4.1-nano - Ultra-lightweight model for basic operations", "gpt-4.1-nano"),
-            ("GPT-4.1-mini - Compact model with good performance", "gpt-4.1-mini"),
-            ("GPT-4o - Standard model with solid capabilities", "gpt-4o"),
-            ("o4-mini - Specialized reasoning model (compact)", "o4-mini"),
-            ("o3-mini - Advanced reasoning model (lightweight)", "o3-mini"),
-            ("o3 - Full advanced reasoning model", "o3"),
-            ("o1 - Premier reasoning and problem-solving model", "o1"),
+            ("GPT-4.1-nano - Ultraleichtes Modell für grundlegende Operationen", "gpt-4.1-nano"),
+            ("GPT-4.1-mini - Kompaktes Modell mit guter Leistung", "gpt-4.1-mini"),
+            ("GPT-4o - Standardmodell mit soliden Fähigkeiten", "gpt-4o"),
+            ("GPT-5-mini - Kompaktes Next-Gen-Modell mit verbessertem Reasoning", "gpt-5-mini"),
+            ("GPT-5 - Next-Generation-Modell mit erweiterten Fähigkeiten", "gpt-5"),
+            ("GPT-5-turbo - Hochleistungsvariante mit optimierter Geschwindigkeit", "gpt-5-turbo"),
+            ("o4-mini - Spezialisiertes Reasoning-Modell (kompakt)", "o4-mini"),
+            ("o3-mini - Fortgeschrittenes Reasoning-Modell (leichtgewichtig)", "o3-mini"),
+            ("o3 - Vollständiges fortgeschrittenes Reasoning-Modell", "o3"),
+            ("o1 - Premium-Reasoning- und Problemlösungsmodell", "o1"),
         ],
         "anthropic": [
-            ("Claude Haiku 3.5 - Fast inference and standard capabilities", "claude-3-5-haiku-latest"),
-            ("Claude Sonnet 3.5 - Highly capable standard model", "claude-3-5-sonnet-latest"),
-            ("Claude Sonnet 3.7 - Exceptional hybrid reasoning and agentic capabilities", "claude-3-7-sonnet-latest"),
-            ("Claude Sonnet 4 - High performance and excellent reasoning", "claude-sonnet-4-0"),
-            ("Claude Opus 4 - Most powerful Anthropic model", "	claude-opus-4-0"),
+            ("Claude Haiku 3.5 - Schnelle Inferenz und Standardfähigkeiten", "claude-3-5-haiku-latest"),
+            ("Claude Sonnet 3.5 - Hochleistungsfähiges Standardmodell", "claude-3-5-sonnet-latest"),
+            ("Claude Sonnet 3.7 - Außergewöhnliche hybride Reasoning- und Agentenfähigkeiten", "claude-3-7-sonnet-latest"),
+            ("Claude Sonnet 4 - Hohe Leistung und exzellentes Reasoning", "claude-sonnet-4-0"),
+            ("Claude Opus 4 - Leistungsstärkstes Anthropic-Modell", "claude-opus-4-0"),
         ],
         "google": [
-            ("Gemini 2.0 Flash-Lite - Cost efficiency and low latency", "gemini-2.0-flash-lite"),
-            ("Gemini 2.0 Flash - Next generation features, speed, and thinking", "gemini-2.0-flash"),
-            ("Gemini 2.5 Flash - Adaptive thinking, cost efficiency", "gemini-2.5-flash-preview-05-20"),
+            ("Gemini 2.0 Flash-Lite - Kosteneffizienz und niedrige Latenz", "gemini-2.0-flash-lite"),
+            ("Gemini 2.0 Flash - Next-Gen-Features, Geschwindigkeit und Denken", "gemini-2.0-flash"),
+            ("Gemini 2.5 Flash - Adaptives Denken, Kosteneffizienz", "gemini-2.5-flash-preview-05-20"),
             ("Gemini 2.5 Pro", "gemini-2.5-pro-preview-06-05"),
         ],
         "openrouter": [
-            ("DeepSeek V3 - a 685B-parameter, mixture-of-experts model", "deepseek/deepseek-chat-v3-0324:free"),
-            ("Deepseek - latest iteration of the flagship chat model family from the DeepSeek team.", "deepseek/deepseek-chat-v3-0324:free"),
+            ("DeepSeek V3 - 685B-Parameter Mixture-of-Experts-Modell", "deepseek/deepseek-chat-v3-0324:free"),
+            ("Deepseek - Neueste Iteration der Flagship-Chat-Modellfamilie vom DeepSeek-Team", "deepseek/deepseek-chat-v3-0324:free"),
         ],
         "ollama": [
-            ("llama3.1 local", "llama3.1"),
+            ("llama3.1 lokal", "llama3.1"),
             ("qwen3", "qwen3"),
         ]
     }
     
     choice = questionary.select(
-        "Select Your [Deep-Thinking LLM Engine]:",
+        "Wählen Sie Ihre [Tiefgehend-Denkende LLM-Engine]:",
         choices=[
             questionary.Choice(display, value=value)
             for display, value in DEEP_AGENT_OPTIONS[provider.lower()]
         ],
-        instruction="\n- Use arrow keys to navigate\n- Press Enter to select",
+        instruction="\n- Pfeiltasten zum Navigieren\n- Enter zum Bestätigen",
         style=questionary.Style(
             [
                 ("selected", "fg:magenta noinherit"),
@@ -234,14 +239,14 @@ def select_deep_thinking_agent(provider) -> str:
     ).ask()
 
     if choice is None:
-        console.print("\n[red]No deep thinking llm engine selected. Exiting...[/red]")
+        console.print("\n[red]Keine tiefgehend denkende LLM-Engine ausgewählt. Programm wird beendet...[/red]")
         exit(1)
 
     return choice
 
 def select_llm_provider() -> tuple[str, str]:
-    """Select the OpenAI api url using interactive selection."""
-    # Define OpenAI api options with their corresponding endpoints
+    """Wählt die LLM-Provider-URL über eine interaktive Auswahl aus."""
+    # Definiere LLM-Provider-Optionen mit ihren zugehörigen Endpunkten
     BASE_URLS = [
         ("OpenAI", "https://api.openai.com/v1"),
         ("Anthropic", "https://api.anthropic.com/"),
@@ -251,12 +256,12 @@ def select_llm_provider() -> tuple[str, str]:
     ]
     
     choice = questionary.select(
-        "Select your LLM Provider:",
+        "Wählen Sie Ihren LLM-Provider:",
         choices=[
             questionary.Choice(display, value=(display, value))
             for display, value in BASE_URLS
         ],
-        instruction="\n- Use arrow keys to navigate\n- Press Enter to select",
+        instruction="\n- Pfeiltasten zum Navigieren\n- Enter zum Bestätigen",
         style=questionary.Style(
             [
                 ("selected", "fg:magenta noinherit"),
@@ -267,10 +272,10 @@ def select_llm_provider() -> tuple[str, str]:
     ).ask()
     
     if choice is None:
-        console.print("\n[red]no OpenAI backend selected. Exiting...[/red]")
+        console.print("\n[red]Kein LLM-Provider ausgewählt. Programm wird beendet...[/red]")
         exit(1)
     
     display_name, url = choice
-    print(f"You selected: {display_name}\tURL: {url}")
+    print(f"Sie haben ausgewählt: {display_name}\tURL: {url}")
     
     return display_name, url

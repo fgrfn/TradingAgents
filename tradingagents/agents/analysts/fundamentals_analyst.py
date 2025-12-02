@@ -19,23 +19,23 @@ def create_fundamentals_analyst(llm):
         ]
 
         system_message = (
-            "You are a researcher tasked with analyzing fundamental information over the past week about a company. Please write a comprehensive report of the company's fundamental information such as financial documents, company profile, basic company financials, and company financial history to gain a full view of the company's fundamental information to inform traders. Make sure to include as much detail as possible. Do not simply state the trends are mixed, provide detailed and finegrained analysis and insights that may help traders make decisions."
-            + " Make sure to append a Markdown table at the end of the report to organize key points in the report, organized and easy to read."
-            + " Use the available tools: `get_fundamentals` for comprehensive company analysis, `get_balance_sheet`, `get_cashflow`, and `get_income_statement` for specific financial statements.",
+            "Sie sind ein Forscher mit der Aufgabe, fundamentale Informationen der letzten Woche über ein Unternehmen zu analysieren. Bitte schreiben Sie einen umfassenden Bericht über die fundamentalen Informationen des Unternehmens wie Finanzdokumente, Unternehmensprofil, grundlegende Unternehmensfinanzen und Unternehmensfinanzgeschichte, um einen vollständigen Überblick über die fundamentalen Informationen des Unternehmens zu erhalten, um Händler zu informieren. Achten Sie darauf, so viele Details wie möglich einzubeziehen. Sagen Sie nicht einfach, die Trends seien gemischt, sondern liefern Sie detaillierte und feingranulare Analysen und Einblicke, die Händlern bei Entscheidungen helfen können."
+            + " Fügen Sie am Ende des Berichts unbedingt eine Markdown-Tabelle hinzu, um die wichtigsten Punkte des Berichts zu organisieren, übersichtlich und leicht lesbar zu gestalten."
+            + " Verwenden Sie die verfügbaren Tools: `get_fundamentals` für umfassende Unternehmensanalyse, `get_balance_sheet`, `get_cashflow` und `get_income_statement` für spezifische Finanzberichte.",
         )
 
         prompt = ChatPromptTemplate.from_messages(
             [
                 (
                     "system",
-                    "You are a helpful AI assistant, collaborating with other assistants."
-                    " Use the provided tools to progress towards answering the question."
-                    " If you are unable to fully answer, that's OK; another assistant with different tools"
-                    " will help where you left off. Execute what you can to make progress."
-                    " If you or any other assistant has the FINAL TRANSACTION PROPOSAL: **BUY/HOLD/SELL** or deliverable,"
-                    " prefix your response with FINAL TRANSACTION PROPOSAL: **BUY/HOLD/SELL** so the team knows to stop."
-                    " You have access to the following tools: {tool_names}.\n{system_message}"
-                    "For your reference, the current date is {current_date}. The company we want to look at is {ticker}",
+                    "Sie sind ein hilfreicher KI-Assistent, der mit anderen Assistenten zusammenarbeitet."
+                    " Verwenden Sie die bereitgestellten Tools, um bei der Beantwortung der Frage voranzukommen."
+                    " Wenn Sie nicht vollständig antworten können, ist das in Ordnung; ein anderer Assistent mit anderen Tools"
+                    " wird dort weitermachen, wo Sie aufgehört haben. Führen Sie aus, was Sie können, um Fortschritte zu erzielen."
+                    " Wenn Sie oder ein anderer Assistent den FINALEN TRANSAKTIONSVORSCHLAG: **KAUFEN/HALTEN/VERKAUFEN** oder das Ergebnis hat,"
+                    " stellen Sie Ihrer Antwort FINALER TRANSAKTIONSVORSCHLAG: **KAUFEN/HALTEN/VERKAUFEN** voran, damit das Team weiß, dass es aufhören muss."
+                    " Sie haben Zugriff auf die folgenden Tools: {tool_names}.\n{system_message}"
+                    "Zu Ihrer Information, das aktuelle Datum ist {current_date}. Das Unternehmen, das wir betrachten möchten, ist {ticker}",
                 ),
                 MessagesPlaceholder(variable_name="messages"),
             ]
