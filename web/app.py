@@ -11,8 +11,12 @@ from pydantic import BaseModel
 from typing import List, Optional
 import asyncio
 import json
+import sys
 from datetime import datetime
 from pathlib import Path
+
+# Add parent directory to path to import tradingagents
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from tradingagents.graph.trading_graph import TradingAgentsGraph
 from tradingagents.default_config import DEFAULT_CONFIG
