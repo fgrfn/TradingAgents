@@ -298,6 +298,9 @@
                         <div class="progress-fill" id="progressFill"></div>
                     </div>
                     <p class="status-text" id="statusText">Initialisierung...</p>
+                    <button id="cancelAnalysisBtn" class="btn-danger" style="margin-top: 1rem;">
+                        <i class="fas fa-stop"></i> Analyse abbrechen
+                    </button>
                 </div>
 
                 <div id="resultsContent" class="results-content">
@@ -386,6 +389,11 @@
             const errorState = document.getElementById('errorState');
             const progressFill = document.getElementById('progressFill');
             const statusText = document.getElementById('statusText');
+            const cancelBtn = document.getElementById('cancelAnalysisBtn');
+
+            // Analysis state
+            let currentAnalysisId = null;
+            let pollingInterval = null;
 
             // Set default date to today
             if (dateInput) {
@@ -655,6 +663,7 @@
                     }
 
                     const analysisId = startData.analysis_id;
+                    currentAnalysisId = analysisId;
                     console.log('✅ Analyse gestartet mit ID:', analysisId);
                     console.log(`📋 Konfiguration: ${analysts.length} Analysten, Tiefe ${depth}`);
 
@@ -665,6 +674,23 @@
                     console.error('Fehler bei der Analyse:', error);
                     showError('Fehler bei der Kommunikation mit dem Server: ' + error.message);
                 }
+            }
+
+            // Cancel analysis
+            function cancelAnalysis() {
+                if (pollingInterval) {
+                    clearInterval(pollingInterval);
+                    pollingInterval = null;
+                }
+                currentAnalysisId = null;
+                hideLoading();
+                showError('Analyse wurde abgebrochen');
+                console.log('🛑 Analyse abgebrochen');
+            }
+
+            // Cancel button handler
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', cancelAnalysis);
             }
 
             // Poll for analysis results with real-time progress updates
@@ -742,7 +768,7 @@
                                 }
                             }
                             
-                            setTimeout(poll, 1000);
+                            pollingInterval = setTimeout(poll, 1000);
                         } else {
                             console.error('❓ Unbekannter Status:', data.status);
                             showError('Unbekannter Status: ' + data.status);
@@ -764,6 +790,12 @@
                 progressFill.style.width = '0%';
                 statusText.textContent = 'Starte Analyse...';
                 document.getElementById('analyzeBtn').disabled = true;
+            }
+
+            // Hide loading state
+            function hideLoading() {
+                loadingState.style.display = 'none';
+                document.getElementById('analyzeBtn').disabled = false;
             }
 
             // Progress interval for cleanup

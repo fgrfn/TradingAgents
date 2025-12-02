@@ -357,8 +357,10 @@ def run_analysis_background(analysis_id: str, request: AnalysisRequest):
         current_step = 0
         
         # Step 1: Initialization
+        import time
         current_step += 1
         update_progress(analysis_id, "Verbindung zum LLM-Provider...", 3, current_step, total_steps)
+        time.sleep(0.3)  # Kurze Pause damit Frontend Update sieht
         
         # Konfiguration erstellen
         config = DEFAULT_CONFIG.copy()
@@ -370,17 +372,21 @@ def run_analysis_background(analysis_id: str, request: AnalysisRequest):
         
         current_step += 1
         update_progress(analysis_id, "Konfiguration wird geladen...", 5, current_step, total_steps)
+        time.sleep(0.3)
 
         # Step 2: Initialize Trading Graph
         current_step += 1
         update_progress(analysis_id, f"{analyst_count} Analysten werden initialisiert...", 8, current_step, total_steps)
+        time.sleep(0.2)
         ta = TradingAgentsGraph(debug=True, config=config)
         
         current_step += 1
         update_progress(analysis_id, "Marktdaten werden abgerufen...", 12, current_step, total_steps)
+        time.sleep(0.2)
         
         current_step += 1
         update_progress(analysis_id, "Fundamentaldaten werden geladen...", 18, current_step, total_steps)
+        time.sleep(0.2)
         
         # Step 3: Run analysis with progress tracking
         # We'll track progress through the analysis phases
