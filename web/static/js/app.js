@@ -220,19 +220,22 @@ document.addEventListener('DOMContentLoaded', function() {
         const depth = parseInt(depthSlider.value);
         const discordWebhook = document.getElementById('discordWebhook').value.trim();
         const discordNotify = document.getElementById('discordNotify').checked;
-            if (data.success) {
-                // Save config after successful analysis
-                await saveConfig();
-                showResults(data.result);
-            } else {
-                showError(data.message);
-            }
 
-        } catch (error) {
-            console.error('Fehler bei der Analyse:', error);
-            showError('Fehler bei der Kommunikation mit dem Server: ' + error.message);
+        // Get selected analysts
+        const analysts = [];
+        document.querySelectorAll('input[name="analysts"]:checked').forEach(checkbox => {
+            analysts.push(checkbox.value);
+        });
+
+        // Validation
+        if (!ticker || !date || !openaiKey || !alphaVantageKey || !provider || !quickModel || !deepModel) {
+            showError('Bitte füllen Sie alle Pflichtfelder aus');
+            return;
         }
-    }       return;
+
+        if (analysts.length === 0) {
+            showError('Bitte wählen Sie mindestens einen Analysten aus');
+            return;
         }
 
         // Prepare request
