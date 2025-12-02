@@ -305,11 +305,11 @@
 
     <script>
         // TradingAgents Web UI - Inline JavaScript (kein Cache!)
-        // VERSION: 2024-12-02-v5 (Formatierte Analyse mit Markdown-Rendering, Tabellen-Support)
+        // VERSION: 2024-12-02-v6 (Progress-Bar Fix: Langsamer Start, bessere Stage-Verteilung)
         
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 TradingAgents UI v5 wird geladen...');
-            console.log('📅 Build: 2024-12-02-v5 - Formatierte Analyse mit Markdown');
+            console.log('🚀 TradingAgents UI v6 wird geladen...');
+            console.log('📅 Build: 2024-12-02-v6 - Progress-Bar optimiert');
             
             // Form Elements
             const form = document.getElementById('analysisForm');
@@ -657,12 +657,15 @@
                                 return;
                             }
                             
-                            // Update status text with time
-                            statusText.textContent = `Analyse läuft... (${timeStr})`;
-                            
-                            // Update progress bar to stay near 98% but pulse
-                            const pulseOffset = Math.sin(attempts / 10) * 2;
-                            progressFill.style.width = `${Math.min(98, 96 + pulseOffset)}%`;
+                            // Only update time display if progress animation is done
+                            // Check if we've reached the end of progress stages
+                            if (!progressInterval || currentProgressStage >= progressStages.length) {
+                                statusText.textContent = `Analyse läuft... (${timeStr})`;
+                                // Update progress bar to stay near 98% but pulse slightly
+                                const pulseOffset = Math.sin(attempts / 10) * 1;
+                                progressFill.style.width = `${Math.min(98, 97 + pulseOffset)}%`;
+                            }
+                            // Otherwise, let the progress simulator continue showing its status
                             
                             setTimeout(poll, 1000);
                         } else {
@@ -690,80 +693,90 @@
 
             // Simulate progress based on actual analysis steps
             let progressInterval = null;
+            let progressStages = [];
+            let currentProgressStage = 0;
+            
             function simulateProgress(analystCount, debateRounds) {
                 console.log(`🎬 Starte Progress-Animation (${analystCount} Analysten, ${debateRounds} Debatten-Runden)`);
                 
                 // Clear any existing interval
                 if (progressInterval) {
                     clearInterval(progressInterval);
+                    progressInterval = null;
                 }
                 
                 // Build dynamic stages based on configuration
-                const stages = [];
+                progressStages = [];
                 
-                // Phase 1: Initialization (5%)
-                stages.push({ percent: 5, text: 'Verbindung zum LLM-Provider...' });
+                // Phase 1: Initialization (0-5%)
+                progressStages.push({ percent: 3, text: 'Verbindung zum LLM-Provider...' });
+                progressStages.push({ percent: 5, text: 'Konfiguration wird geladen...' });
                 
-                // Phase 2: Data gathering (15%)
-                stages.push({ percent: 15, text: `${analystCount} Analysten werden initialisiert...` });
-                stages.push({ percent: 25, text: 'Marktdaten werden abgerufen...' });
+                // Phase 2: Data gathering (5-20%)
+                progressStages.push({ percent: 8, text: `${analystCount} Analysten werden initialisiert...` });
+                progressStages.push({ percent: 12, text: 'Marktdaten werden abgerufen...' });
+                progressStages.push({ percent: 18, text: 'Fundamentaldaten werden geladen...' });
                 
-                // Phase 3: Analyst work (25-70%, depends on analyst count)
-                const analystPhasePercent = 25;
-                const percentPerAnalyst = 45 / analystCount;
+                // Phase 3: Analyst work (20-65%, depends on analyst count)
+                const analystStartPercent = 20;
+                const analystRangePercent = 45;
+                const percentPerAnalyst = analystRangePercent / analystCount;
                 for (let i = 0; i < analystCount; i++) {
-                    const percent = Math.round(analystPhasePercent + (i + 1) * percentPerAnalyst);
-                    stages.push({ 
-                        percent: percent, 
-                        text: `Analyst ${i + 1}/${analystCount} arbeitet...` 
+                    const percent = Math.round(analystStartPercent + (i + 1) * percentPerAnalyst);
+                    progressStages.push({ 
+                        percent: Math.min(percent, 65), 
+                        text: `Analyst ${i + 1}/${analystCount} analysiert...` 
                     });
                 }
                 
-                // Phase 4: Debate rounds (70-90%, depends on rounds)
-                const debateStartPercent = 70;
-                const percentPerRound = 20 / debateRounds;
+                // Phase 4: Debate rounds (65-88%, depends on rounds)
+                const debateStartPercent = 65;
+                const debateRangePercent = 23;
+                const percentPerRound = debateRangePercent / debateRounds;
                 for (let i = 0; i < debateRounds; i++) {
                     const percent = Math.round(debateStartPercent + (i + 1) * percentPerRound);
-                    stages.push({ 
-                        percent: percent, 
+                    progressStages.push({ 
+                        percent: Math.min(percent, 88), 
                         text: `Debatte Runde ${i + 1}/${debateRounds}...` 
                     });
                 }
                 
-                // Phase 5: Finalization (90-98%)
-                stages.push({ percent: 92, text: 'Forschungsmanager erstellt Synthese...' });
-                stages.push({ percent: 95, text: 'Finale Empfehlung wird erstellt...' });
-                stages.push({ percent: 98, text: 'Transaktionsvorschlag wird validiert...' });
+                // Phase 5: Finalization (88-98%)
+                progressStages.push({ percent: 90, text: 'Risikomanagement-Bewertung...' });
+                progressStages.push({ percent: 93, text: 'Forschungsmanager erstellt Synthese...' });
+                progressStages.push({ percent: 96, text: 'Finale Empfehlung wird erstellt...' });
+                progressStages.push({ percent: 98, text: 'Transaktionsvorschlag wird validiert...' });
 
-                console.log(`📊 ${stages.length} Stages erstellt`);
+                console.log(`📊 ${progressStages.length} Stages erstellt`);
 
                 // Calculate dynamic interval based on expected total time
                 // Realistic estimate: 60-300 seconds depending on complexity
                 const estimatedSeconds = 60 + (analystCount * 30) + (debateRounds * 20);
-                // Slow down the progress bar significantly - aim for 80% of estimated time
-                const intervalMs = Math.floor((estimatedSeconds * 1000 * 0.8) / stages.length);
-                // Minimum 4 seconds per stage, maximum 15 seconds
-                const finalIntervalMs = Math.max(4000, Math.min(intervalMs, 15000));
+                // Aim to reach 98% at about 70% of estimated time (to leave buffer for real completion)
+                const intervalMs = Math.floor((estimatedSeconds * 1000 * 0.7) / progressStages.length);
+                // Minimum 3 seconds per stage, maximum 12 seconds
+                const finalIntervalMs = Math.max(3000, Math.min(intervalMs, 12000));
                 
                 console.log(`⏱️ Geschätzte Zeit: ${estimatedSeconds}s (~${Math.round(estimatedSeconds/60)}min), Interval: ${finalIntervalMs}ms pro Stage`);
 
-                let currentStage = 0;
+                currentProgressStage = 0;
+                
+                // Immediately show first stage
+                progressFill.style.width = '0%';
+                statusText.textContent = '[Schritt 1/' + progressStages.length + '] Initialisierung...';
+                
                 progressInterval = setInterval(() => {
-                    if (currentStage < stages.length) {
-                        const stage = stages[currentStage];
+                    if (currentProgressStage < progressStages.length) {
+                        const stage = progressStages[currentProgressStage];
                         progressFill.style.width = stage.percent + '%';
-                        console.log(`📊 Progress: ${stage.percent}% - ${stage.text}`);
-                        // Update status text with stage counter and description
-                        if (!statusText.textContent.includes('läuft... (')) {
-                            statusText.textContent = `[Schritt ${currentStage + 1}/${stages.length}] ${stage.text}`;
-                        }
-                        currentStage++;
+                        statusText.textContent = `[Schritt ${currentProgressStage + 1}/${progressStages.length}] ${stage.text}`;
+                        console.log(`📊 Progress: ${stage.percent}% - [Schritt ${currentProgressStage + 1}/${progressStages.length}] ${stage.text}`);
+                        currentProgressStage++;
                     } else {
                         // Keep at 98% until real completion
                         console.log('⏳ Warte auf finale Ergebnisse...');
-                        if (!statusText.textContent.includes('läuft... (')) {
-                            statusText.textContent = `[Schritt ${stages.length}/${stages.length}] Finalisierung läuft, bitte warten...`;
-                        }
+                        statusText.textContent = `[Schritt ${progressStages.length}/${progressStages.length}] Finalisierung läuft, bitte warten...`;
+                        // Don't clear interval - keep showing this message
                     }
                 }, finalIntervalMs);
             }
