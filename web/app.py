@@ -498,7 +498,14 @@ def run_analysis_background(analysis_id: str, request: AnalysisRequest):
             "status": "error",
             "success": False,
             "error": str(e),
-            "error_trace": error_trace
+            "error_trace": error_trace,
+            "progress": {
+                "step": f"Fehler: {str(e)[:50]}...",
+                "percent": 0,
+                "step_number": 0,
+                "total_steps": 0,
+                "timestamp": datetime.now().isoformat()
+            }
         }
 
 
@@ -508,10 +515,17 @@ async def analyze_stock(request: AnalysisRequest):
     # Generate unique ID for this analysis
     analysis_id = str(uuid.uuid4())
     
-    # Mark as running
+    # Mark as running with initial progress at 0%
     analysis_results[analysis_id] = {
         "status": "running",
-        "success": None
+        "success": None,
+        "progress": {
+            "step": "Analyse wird vorbereitet...",
+            "percent": 0,
+            "step_number": 0,
+            "total_steps": 15,  # Wird im Background-Thread aktualisiert
+            "timestamp": datetime.now().isoformat()
+        }
     }
     
     # Start background thread
