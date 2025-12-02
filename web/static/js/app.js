@@ -1,6 +1,8 @@
 // TradingAgents Web UI - JavaScript
 
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 TradingAgents UI wird geladen...');
+    
     // Form Elements
     const form = document.getElementById('analysisForm');
     const providerSelect = document.getElementById('provider');
@@ -13,6 +15,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const alphaVantageKeyInput = document.getElementById('alphaVantageKey');
     const discordWebhookInput = document.getElementById('discordWebhook');
     
+    // Debug: Überprüfe ob alle Elemente gefunden wurden
+    console.log('Elements gefunden:', {
+        form: !!form,
+        providerSelect: !!providerSelect,
+        openaiKeyInput: !!openaiKeyInput,
+        alphaVantageKeyInput: !!alphaVantageKeyInput,
+        discordWebhookInput: !!discordWebhookInput
+    });
+    
     // State Elements
     const loadingState = document.getElementById('loadingState');
     const resultsContent = document.getElementById('resultsContent');
@@ -21,16 +32,22 @@ document.addEventListener('DOMContentLoaded', function() {
     const statusText = document.getElementById('statusText');
 
     // Set default date to today
-    dateInput.valueAsDate = new Date();
+    if (dateInput) {
+        dateInput.valueAsDate = new Date();
+        console.log('✓ Datum gesetzt');
+    }
 
     // Load saved configuration and form data
+    console.log('📥 Lade gespeicherte Konfiguration...');
     loadSavedConfig();
     loadFormData();
 
     // Load providers on page load
+    console.log('🔌 Lade LLM Provider...');
     loadProviders();
     
     // Attach auto-save listeners
+    console.log('🔗 Richte Auto-Save ein...');
     attachAutoSaveListeners();
 
     // Depth slider update
@@ -68,20 +85,25 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load saved configuration from .env
     async function loadSavedConfig() {
         try {
+            console.log('Rufe /api/config auf...');
             const response = await fetch('/api/config');
             const config = await response.json();
+            console.log('Konfiguration geladen:', config);
             
-            if (config.openai_api_key) {
+            if (config.openai_api_key && openaiKeyInput) {
                 openaiKeyInput.value = config.openai_api_key;
+                console.log('✓ OpenAI Key wiederhergestellt');
             }
-            if (config.alpha_vantage_api_key) {
+            if (config.alpha_vantage_api_key && alphaVantageKeyInput) {
                 alphaVantageKeyInput.value = config.alpha_vantage_api_key;
+                console.log('✓ Alpha Vantage Key wiederhergestellt');
             }
-            if (config.discord_webhook) {
+            if (config.discord_webhook && discordWebhookInput) {
                 discordWebhookInput.value = config.discord_webhook;
+                console.log('✓ Discord Webhook wiederhergestellt');
             }
         } catch (error) {
-            console.error('Fehler beim Laden der Konfiguration:', error);
+            console.error('❌ Fehler beim Laden der Konfiguration:', error);
         }
     }
 
@@ -123,8 +145,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load available providers
     async function loadProviders() {
         try {
+            console.log('Rufe /api/providers auf...');
             const response = await fetch('/api/providers');
             const data = await response.json();
+            console.log('Provider geladen:', data);
+            
+            if (!providerSelect) {
+                console.error('❌ providerSelect Element nicht gefunden!');
+                return;
+            }
             
             providerSelect.innerHTML = '<option value="">Bitte wählen...</option>';
             data.providers.forEach(provider => {
@@ -134,9 +163,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 option.dataset.url = provider.url;
                 providerSelect.appendChild(option);
             });
+            console.log(`✓ ${data.providers.length} Provider hinzugefügt`);
         } catch (error) {
-            console.error('Fehler beim Laden der Provider:', error);
-            showError('Fehler beim Laden der Provider');
+            console.error('❌ Fehler beim Laden der Provider:', error);
+            if (typeof showError === 'function') {
+                showError('Fehler beim Laden der Provider');
+            }
         }
     }
 
