@@ -1758,19 +1758,19 @@
                 resultsContent.innerHTML = `
                     <div class="analysis-content">
                         <div class="analysis-actions">
-                            <button class="btn-action btn-export tooltip" data-tooltip="Als HTML speichern" onclick="exportAnalysis()">
+                            <button class="btn-action btn-export tooltip" data-tooltip="Als HTML speichern" id="exportBtn">
                                 <i class="fas fa-download"></i> Export
                             </button>
-                            <button class="btn-action btn-copy tooltip" data-tooltip="In Zwischenablage kopieren" onclick="copyAnalysis()">
+                            <button class="btn-action btn-copy tooltip" data-tooltip="In Zwischenablage kopieren" id="copyBtn">
                                 <i class="fas fa-copy"></i> Kopieren
                             </button>
-                            <button class="btn-action btn-print tooltip" data-tooltip="Drucken" onclick="printAnalysis()">
+                            <button class="btn-action btn-print tooltip" data-tooltip="Drucken" id="printBtn">
                                 <i class="fas fa-print"></i> Drucken
                             </button>
-                            <button class="btn-action btn-copy tooltip" data-tooltip="Inhaltsverzeichnis anzeigen" onclick="toggleTOC()">
+                            <button class="btn-action btn-copy tooltip" data-tooltip="Inhaltsverzeichnis anzeigen" id="tocBtn">
                                 <i class="fas fa-list"></i> Inhalt
                             </button>
-                            <button class="btn-action btn-dark-mode tooltip" data-tooltip="Dunklen Modus umschalten" onclick="toggleDarkMode()">
+                            <button class="btn-action btn-dark-mode tooltip" data-tooltip="Dunklen Modus umschalten" id="darkModeBtn">
                                 <i class="fas fa-moon"></i>
                             </button>
                         </div>
@@ -1784,6 +1784,13 @@
                         </div>
                     </div>
                 `;
+                
+                // Add event listeners to action buttons
+                document.getElementById('exportBtn').addEventListener('click', exportAnalysis);
+                document.getElementById('copyBtn').addEventListener('click', copyAnalysis);
+                document.getElementById('printBtn').addEventListener('click', printAnalysis);
+                document.getElementById('tocBtn').addEventListener('click', toggleTOC);
+                document.getElementById('darkModeBtn').addEventListener('click', toggleDarkMode);
                 
                 // Add table sorting functionality
                 addTableSorting();
@@ -2297,21 +2304,26 @@
                 console.log('📑 Table of Contents generiert mit', headers.length, 'Sektionen');
             }
             
-            // Toggle TOC visibility
-            function toggleTOC() {
+            // Toggle TOC visibility (global scope for onclick)
+            window.toggleTOC = function() {
                 const tocContainer = document.getElementById('tocContainer');
                 const toggleBtn = document.querySelector('.toc-toggle');
                 
-                if (!tocContainer) return;
+                if (!tocContainer) {
+                    console.warn('TOC Container nicht gefunden');
+                    return;
+                }
                 
                 const isCollapsed = tocContainer.classList.contains('collapsed');
                 
                 if (isCollapsed) {
                     tocContainer.classList.remove('collapsed');
                     if (toggleBtn) toggleBtn.classList.add('expanded');
+                    console.log('📖 TOC geöffnet');
                 } else {
                     tocContainer.classList.add('collapsed');
                     if (toggleBtn) toggleBtn.classList.remove('expanded');
+                    console.log('📖 TOC geschlossen');
                 }
             }
             
