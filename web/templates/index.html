@@ -994,6 +994,232 @@
             }
         }
         
+        /* Live Preview Indicators */
+        .input-wrapper {
+            position: relative;
+        }
+        
+        .input-status {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1rem;
+            pointer-events: none;
+        }
+        
+        .input-status.validating {
+            color: #f59e0b;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        
+        .input-status.valid {
+            color: #10b981;
+        }
+        
+        .input-status.invalid {
+            color: #ef4444;
+        }
+        
+        .preview-info {
+            margin-top: 8px;
+            padding: 10px 12px;
+            background: #f1f5f9;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            color: #475569;
+            display: none;
+        }
+        
+        .preview-info.show {
+            display: block;
+        }
+        
+        .preview-info .info-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+        
+        .preview-info .info-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .preview-info .info-icon {
+            width: 16px;
+            text-align: center;
+        }
+        
+        body.dark-mode .preview-info {
+            background: #334155;
+            color: #cbd5e1;
+        }
+        
+        /* History Search & Filter */
+        .history-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .search-box {
+            flex: 1;
+            min-width: 200px;
+            position: relative;
+        }
+        
+        .search-box input {
+            width: 100%;
+            padding: 8px 35px 8px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+        
+        .search-box i {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+        }
+        
+        .filter-group {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .filter-btn {
+            padding: 8px 14px;
+            border: 1px solid #cbd5e1;
+            background: white;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .filter-btn:hover {
+            background: #f1f5f9;
+            border-color: #94a3b8;
+        }
+        
+        .filter-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .filter-btn .badge {
+            background: rgba(255,255,255,0.3);
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        /* Compare View */
+        .compare-container {
+            display: none;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .compare-container.active {
+            display: grid;
+        }
+        
+        .compare-panel {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        
+        .compare-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        
+        .compare-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1e293b;
+        }
+        
+        .compare-close {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 4px;
+        }
+        
+        .compare-close:hover {
+            color: #475569;
+        }
+        
+        .compare-decision {
+            text-align: center;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        
+        .compare-decision.buy {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            color: #059669;
+        }
+        
+        .compare-decision.sell {
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            color: #dc2626;
+        }
+        
+        .compare-decision.hold {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            color: #d97706;
+        }
+        
+        .compare-meta {
+            font-size: 0.9rem;
+            color: #64748b;
+            margin-bottom: 15px;
+        }
+        
+        body.dark-mode .compare-panel {
+            background: #1e293b;
+        }
+        
+        body.dark-mode .compare-title {
+            color: #f1f5f9;
+        }
+        
+        body.dark-mode .compare-meta {
+            color: #cbd5e1;
+        }
+        
+        @media (max-width: 1024px) {
+            .compare-container {
+                grid-template-columns: 1fr;
+            }
+        }
+        
         /* Print Styles */
         @media print {
             .analysis-actions,
@@ -1047,7 +1273,11 @@
                                 <label for="ticker">
                                     <i class="fas fa-tag"></i> Ticker-Symbol
                                 </label>
-                                <input type="text" id="ticker" name="ticker" placeholder="z.B. AAPL" required>
+                                <div class="input-wrapper">
+                                    <input type="text" id="ticker" name="ticker" placeholder="z.B. AAPL" required>
+                                    <span class="input-status" id="tickerStatus"></span>
+                                </div>
+                                <div class="preview-info" id="tickerPreview"></div>
                             </div>
                             <div class="form-group">
                                 <label for="date">
@@ -1236,16 +1466,58 @@
                     </button>
                 </div>
                 <div class="modal-body">
+                    <!-- History Controls -->
+                    <div class="history-controls">
+                        <div class="search-box">
+                            <input type="text" id="historySearch" placeholder="Ticker suchen...">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <div class="filter-group">
+                            <button class="filter-btn active" data-filter="all" onclick="filterHistory('all')">
+                                <i class="fas fa-list"></i> Alle <span class="badge" id="countAll">0</span>
+                            </button>
+                            <button class="filter-btn" data-filter="buy" onclick="filterHistory('buy')">
+                                <i class="fas fa-arrow-up"></i> Kaufen <span class="badge" id="countBuy">0</span>
+                            </button>
+                            <button class="filter-btn" data-filter="sell" onclick="filterHistory('sell')">
+                                <i class="fas fa-arrow-down"></i> Verkaufen <span class="badge" id="countSell">0</span>
+                            </button>
+                            <button class="filter-btn" data-filter="hold" onclick="filterHistory('hold')">
+                                <i class="fas fa-pause"></i> Halten <span class="badge" id="countHold">0</span>
+                            </button>
+                        </div>
+                    </div>
+                    
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                         <p style="color: #64748b; margin: 0;">Gespeicherte Analysen</p>
                         <button id="clearAllHistoryBtn" class="btn-danger-small">
                             <i class="fas fa-trash"></i> Alle löschen
                         </button>
                     </div>
+                    
                     <div id="historyList" class="history-list">
                         <div class="empty-state">
                             <i class="fas fa-inbox"></i>
                             <p>Keine History vorhanden</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Compare View -->
+                    <div class="compare-container" id="compareContainer">
+                        <div class="compare-panel">
+                            <div class="compare-header">
+                                <div class="compare-title">Analyse 1</div>
+                                <button class="compare-close" onclick="closeCompare()">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <div id="compareContent1"></div>
+                        </div>
+                        <div class="compare-panel">
+                            <div class="compare-header">
+                                <div class="compare-title">Analyse 2</div>
+                            </div>
+                            <div id="compareContent2"></div>
                         </div>
                     </div>
                 </div>
@@ -1955,9 +2227,6 @@
                             <button class="btn-action btn-copy tooltip" data-tooltip="Inhaltsverzeichnis anzeigen" id="tocBtn">
                                 <i class="fas fa-list"></i> Inhalt
                             </button>
-                            <button class="btn-action btn-dark-mode tooltip" data-tooltip="Dunklen Modus umschalten" id="darkModeBtn">
-                                <i class="fas fa-moon"></i>
-                            </button>
                         </div>
                         <div class="decision-banner ${decisionClass}">
                             <div class="decision-title">${decisionIcon} Handelsentscheidung für ${result.ticker || 'N/A'}</div>
@@ -1975,7 +2244,6 @@
                 document.getElementById('copyBtn').addEventListener('click', copyAnalysis);
                 document.getElementById('printBtn').addEventListener('click', printAnalysis);
                 document.getElementById('tocBtn').addEventListener('click', toggleTOC);
-                document.getElementById('darkModeBtn').addEventListener('click', toggleDarkMode);
                 
                 // Add table sorting functionality
                 addTableSorting();
@@ -2123,21 +2391,12 @@
                 console.log('🖨️ Druckvorschau geöffnet');
             }
             
-            // Toggle dark mode
+            // Toggle dark mode (only for main page, not used in analysis results)
             function toggleDarkMode(event) {
                 document.body.classList.toggle('dark-mode');
                 const isDark = document.body.classList.contains('dark-mode');
                 localStorage.setItem('darkMode', isDark);
                 
-                const btn = event ? event.target.closest('.btn-dark-mode') : document.getElementById('darkModeBtn');
-                if (btn) {
-                    const icon = btn.querySelector('i');
-                    if (icon) {
-                        icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
-                    }
-                }
-                
-                showToast(`Dark Mode ${isDark ? 'aktiviert' : 'deaktiviert'}`, 'info', 2000);
                 console.log(`🌓 Dark Mode: ${isDark ? 'aktiviert' : 'deaktiviert'}`);
             }
             
@@ -2192,6 +2451,92 @@
             if (localStorage.getItem('darkMode') === 'true') {
                 document.body.classList.add('dark-mode');
             }
+            
+            // Live Preview - Ticker Validation
+            let tickerValidationTimeout;
+            const tickerInput = document.getElementById('ticker');
+            const tickerStatus = document.getElementById('tickerStatus');
+            const tickerPreview = document.getElementById('tickerPreview');
+            
+            if (tickerInput) {
+                tickerInput.addEventListener('input', function() {
+                    const ticker = this.value.trim().toUpperCase();
+                    
+                    if (!ticker) {
+                        tickerStatus.innerHTML = '';
+                        tickerPreview.classList.remove('show');
+                        return;
+                    }
+                    
+                    // Show validating state
+                    tickerStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                    tickerStatus.className = 'input-status validating';
+                    
+                    // Debounce validation
+                    clearTimeout(tickerValidationTimeout);
+                    tickerValidationTimeout = setTimeout(() => {
+                        validateTicker(ticker);
+                    }, 500);
+                });
+            }
+            
+            async function validateTicker(ticker) {
+                try {
+                    // Simple validation - check if ticker format is valid
+                    const isValidFormat = /^[A-Z]{1,5}$/.test(ticker);
+                    
+                    if (!isValidFormat) {
+                        tickerStatus.innerHTML = '<i class="fas fa-times-circle"></i>';
+                        tickerStatus.className = 'input-status invalid';
+                        tickerPreview.innerHTML = '<div class="info-item"><span class="info-icon">⚠️</span> Ungültiges Format (1-5 Buchstaben)</div>';
+                        tickerPreview.classList.add('show');
+                        return;
+                    }
+                    
+                    // Show valid
+                    tickerStatus.innerHTML = '<i class="fas fa-check-circle"></i>';
+                    tickerStatus.className = 'input-status valid';
+                    
+                    // Calculate estimated analysis time
+                    const depth = parseInt(document.getElementById('depth').value) || 3;
+                    const analysts = document.querySelectorAll('input[name="analysts"]:checked').length;
+                    const estimatedMinutes = Math.ceil((depth * analysts * 0.5) + 1);
+                    
+                    tickerPreview.innerHTML = `
+                        <div class="info-item">
+                            <span class="info-icon">✅</span>
+                            <span>Symbol: <strong>${ticker}</strong></span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-icon">⏱️</span>
+                            <span>Geschätzte Dauer: <strong>~${estimatedMinutes} Min.</strong></span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-icon">👥</span>
+                            <span>Analysten: <strong>${analysts}</strong> | Tiefe: <strong>${depth}</strong></span>
+                        </div>
+                    `;
+                    tickerPreview.classList.add('show');
+                    
+                } catch (error) {
+                    console.error('Ticker validation error:', error);
+                    tickerStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i>';
+                    tickerStatus.className = 'input-status invalid';
+                }
+            }
+            
+            // Update preview when depth or analysts change
+            document.getElementById('depth')?.addEventListener('change', () => {
+                const ticker = tickerInput?.value.trim().toUpperCase();
+                if (ticker) validateTicker(ticker);
+            });
+            
+            document.querySelectorAll('input[name="analysts"]').forEach(checkbox => {
+                checkbox.addEventListener('change', () => {
+                    const ticker = tickerInput?.value.trim().toUpperCase();
+                    if (ticker) validateTicker(ticker);
+                });
+            });
             
             // Toast Notification System
             function showToast(message, type = 'info', duration = 4000, title = null) {
@@ -2777,13 +3122,91 @@
                 }
             });
 
+            // Compare functionality
+            let compareItems = [];
+            
+            window.addToCompare = async function(analysisId) {
+                if (compareItems.length >= 2) {
+                    showToast('Maximal 2 Analysen können verglichen werden', 'warning');
+                    compareItems = [];
+                }
+                
+                try {
+                    const response = await fetch(`/api/analysis/${analysisId}`);
+                    const data = await response.json();
+                    
+                    if (data.success && data.result) {
+                        compareItems.push(data.result);
+                        showToast(`Analyse ${compareItems.length}/2 ausgewählt`, 'info', 2000);
+                        
+                        if (compareItems.length === 2) {
+                            showCompare();
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error loading analysis for compare:', error);
+                    showToast('Fehler beim Laden der Analyse', 'error');
+                }
+            };
+            
+            function showCompare() {
+                const container = document.getElementById('compareContainer');
+                if (!container || compareItems.length !== 2) return;
+                
+                const content1 = document.getElementById('compareContent1');
+                const content2 = document.getElementById('compareContent2');
+                
+                [content1, content2].forEach((content, index) => {
+                    const item = compareItems[index];
+                    const decision = item.decision || 'Unbekannt';
+                    const decisionClass = decision.toLowerCase().includes('kauf') || decision.toLowerCase().includes('buy') ? 'buy' :
+                                         decision.toLowerCase().includes('verkauf') || decision.toLowerCase().includes('sell') ? 'sell' : 'hold';
+                    
+                    content.innerHTML = `
+                        <div class="compare-decision ${decisionClass}">
+                            ${decision}
+                        </div>
+                        <div class="compare-meta">
+                            <strong>${item.ticker}</strong> | ${item.date}<br>
+                            Analysiert: ${new Date(item.timestamp || Date.now()).toLocaleString('de-DE')}
+                        </div>
+                        <div style="font-size: 0.9rem; line-height: 1.6; color: #475569;">
+                            ${(item.full_analysis || 'Keine Details verfügbar').substring(0, 1000)}...
+                        </div>
+                    `;
+                });
+                
+                container.classList.add('active');
+                container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                showToast('Vergleichsansicht geöffnet', 'success', 2000);
+            }
+            
+            window.closeCompare = function() {
+                document.getElementById('compareContainer')?.classList.remove('active');
+                compareItems = [];
+            };
+            
+            // Repeat Analysis
+            window.repeatAnalysis = function(ticker, date) {
+                document.getElementById('ticker').value = ticker;
+                document.getElementById('date').value = date;
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                showToast(`Konfiguration für ${ticker} geladen`, 'info', 2000);
+            };
+            
+            // History data storage
+            let historyData = [];
+            let currentFilter = 'all';
+            
             async function loadHistory() {
                 try {
                     const response = await fetch('/api/history?limit=50');
                     const data = await response.json();
                     
                     if (data.success && data.history.length > 0) {
-                        displayHistory(data.history);
+                        historyData = data.history;
+                        updateFilterCounts();
+                        displayHistory(historyData);
                     } else {
                         historyList.innerHTML = `
                             <div class="empty-state">
@@ -2799,8 +3222,78 @@
                     alert('Fehler beim Laden der History');
                 }
             }
+            
+            // Update filter counts
+            function updateFilterCounts() {
+                const counts = {
+                    all: historyData.length,
+                    buy: historyData.filter(i => (i.decision || '').includes('KAUFEN') || (i.decision || '').includes('BUY')).length,
+                    sell: historyData.filter(i => (i.decision || '').includes('VERKAUFEN') || (i.decision || '').includes('SELL')).length,
+                    hold: historyData.filter(i => {
+                        const dec = (i.decision || '').toUpperCase();
+                        return dec.includes('HALT') || dec.includes('HOLD') || (!dec.includes('KAUF') && !dec.includes('BUY') && !dec.includes('VERKAUF') && !dec.includes('SELL'));
+                    }).length
+                };
+                
+                document.getElementById('countAll').textContent = counts.all;
+                document.getElementById('countBuy').textContent = counts.buy;
+                document.getElementById('countSell').textContent = counts.sell;
+                document.getElementById('countHold').textContent = counts.hold;
+            }
+            
+            // Filter History
+            window.filterHistory = function(filter) {
+                currentFilter = filter;
+                const searchTerm = document.getElementById('historySearch')?.value.toLowerCase() || '';
+                
+                // Update active button
+                document.querySelectorAll('.filter-btn').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.filter === filter);
+                });
+                
+                filterAndDisplayHistory(searchTerm, filter);
+            };
+            
+            // History Search
+            document.getElementById('historySearch')?.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                filterAndDisplayHistory(searchTerm, currentFilter);
+            });
+            
+            function filterAndDisplayHistory(searchTerm, filter) {
+                let filtered = historyData;
+                
+                // Apply search filter
+                if (searchTerm) {
+                    filtered = filtered.filter(item => 
+                        (item.ticker || '').toLowerCase().includes(searchTerm)
+                    );
+                }
+                
+                // Apply decision filter
+                if (filter !== 'all') {
+                    filtered = filtered.filter(item => {
+                        const decision = (item.decision || '').toUpperCase();
+                        if (filter === 'buy') return decision.includes('KAUF') || decision.includes('BUY');
+                        if (filter === 'sell') return decision.includes('VERKAUF') || decision.includes('SELL');
+                        if (filter === 'hold') return decision.includes('HALT') || decision.includes('HOLD') || (!decision.includes('KAUF') && !decision.includes('BUY') && !decision.includes('VERKAUF') && !decision.includes('SELL'));
+                        return true;
+                    });
+                }
+                
+                displayHistory(filtered);
+            }
 
             function displayHistory(history) {
+                if (history.length === 0) {
+                    historyList.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-inbox"></i>
+                            <p>Keine Einträge gefunden</p>
+                        </div>
+                    `;
+                    return;
+                }
                 historyList.innerHTML = history.map(item => {
                     const date = new Date(item.created_at);
                     const formattedDate = date.toLocaleString('de-DE');
@@ -2832,14 +3325,99 @@
                                     📊 Tiefe: ${item.research_depth}
                                 </small>
                             </div>
-                            <button class="btn-link" onclick="loadHistoryAnalysis('${item.id}')">
-                                Details anzeigen <i class="fas fa-arrow-right"></i>
-                            </button>
+                            <div style="display: flex; gap: 8px; margin-top: 10px;">
+                                <button class="btn-link" onclick="loadHistoryAnalysis('${item.id}')" style="flex: 1;">
+                                    <i class="fas fa-eye"></i> Details
+                                </button>
+                                <button class="btn-link" onclick="addToCompare('${item.id}')" style="flex: 1;">
+                                    <i class="fas fa-columns"></i> Vergleichen
+                                </button>
+                                <button class="btn-link" onclick="repeatAnalysis('${item.ticker}', '${item.date}')" style="flex: 1;">
+                                    <i class="fas fa-redo"></i> Wiederholen
+                                </button>
+                            </div>
                         </div>
                     `;
                 }).join('');
             }
 
+            // Compare functionality
+            let compareItems = [];
+            
+            window.addToCompare = async function(id) {
+                if (compareItems.length >= 2) {
+                    showToast('Maximal 2 Analysen können verglichen werden. Vorherige werden überschrieben.', 'warning', 3000);
+                    compareItems = [];
+                }
+                
+                try {
+                    const response = await fetch(`/api/history/${id}`);
+                    const data = await response.json();
+                    
+                    if (data.success && data.result) {
+                        compareItems.push(data.result);
+                        showToast(`Analyse ${compareItems.length}/2 ausgewählt`, 'info', 2000);
+                        
+                        if (compareItems.length === 2) {
+                            showCompare();
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error loading analysis for compare:', error);
+                    showToast('Fehler beim Laden der Analyse', 'error');
+                }
+            };
+            
+            function showCompare() {
+                const container = document.getElementById('compareContainer');
+                if (!container || compareItems.length !== 2) return;
+                
+                const content1 = document.getElementById('compareContent1');
+                const content2 = document.getElementById('compareContent2');
+                
+                [content1, content2].forEach((content, index) => {
+                    const item = compareItems[index];
+                    const decision = item.decision || 'Unbekannt';
+                    const decisionClass = decision.includes('KAUFEN') || decision.includes('BUY') ? 'buy' :
+                                         decision.includes('VERKAUFEN') || decision.includes('SELL') ? 'sell' : 'hold';
+                    
+                    const date = new Date(item.created_at || Date.now());
+                    const formattedDate = date.toLocaleString('de-DE');
+                    
+                    content.innerHTML = `
+                        <div class="compare-decision ${decisionClass}">
+                            ${decision}
+                        </div>
+                        <div class="compare-meta">
+                            <strong>${item.ticker}</strong> | ${item.date}<br>
+                            Analysiert: ${formattedDate}<br>
+                            Modell: ${item.llm_model} | Tiefe: ${item.research_depth}
+                        </div>
+                        <div style="font-size: 0.9rem; line-height: 1.6; color: #475569; max-height: 400px; overflow-y: auto; padding: 10px; background: #f8fafc; border-radius: 8px; margin-top: 15px;">
+                            ${(item.full_analysis || 'Keine Details verfügbar').substring(0, 2000).replace(/\n/g, '<br>')}...
+                        </div>
+                    `;
+                });
+                
+                container.classList.add('active');
+                container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                showToast('Vergleichsansicht geöffnet', 'success', 2000);
+            }
+            
+            window.closeCompare = function() {
+                document.getElementById('compareContainer')?.classList.remove('active');
+                compareItems = [];
+            };
+            
+            // Repeat Analysis
+            window.repeatAnalysis = function(ticker, date) {
+                historyModal.style.display = 'none';
+                document.getElementById('ticker').value = ticker;
+                document.getElementById('date').value = date;
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                showToast(`Konfiguration für ${ticker} geladen`, 'success', 3000);
+            };
+            
             window.deleteHistoryItem = async function(id) {
                 if (!confirm('Diese Analyse wirklich löschen?')) return;
                 
@@ -2848,6 +3426,7 @@
                     const data = await response.json();
                     
                     if (data.success) {
+                        showToast('Analyse gelöscht', 'success', 2000);
                         console.log('✅ Analyse gelöscht');
                         loadHistory();
                     } else {
