@@ -7,6 +7,7 @@
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <link rel="stylesheet" href="/static/css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         /* Analysis Content Styling */
         .analysis-content {
@@ -505,6 +506,147 @@
             }
         }
         
+        /* Chart Containers */
+        .chart-container {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin: 20px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        
+        .chart-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .chart-wrapper {
+            position: relative;
+            height: 300px;
+        }
+        
+        .chart-wrapper.small {
+            height: 200px;
+        }
+        
+        /* Sentiment Gauge */
+        .sentiment-gauge {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .gauge-chart {
+            flex: 1;
+            max-width: 250px;
+        }
+        
+        .gauge-info {
+            flex: 1;
+        }
+        
+        .gauge-label {
+            font-size: 0.9rem;
+            color: #64748b;
+            margin-bottom: 5px;
+        }
+        
+        .gauge-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1e293b;
+        }
+        
+        .gauge-description {
+            font-size: 0.95rem;
+            color: #475569;
+            margin-top: 10px;
+            line-height: 1.6;
+        }
+        
+        /* Risk Score Bar */
+        .risk-score {
+            margin: 20px 0;
+        }
+        
+        .risk-bar-container {
+            background: #f1f5f9;
+            border-radius: 20px;
+            height: 40px;
+            position: relative;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        
+        .risk-bar {
+            height: 100%;
+            border-radius: 20px;
+            transition: width 1s ease-out;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 15px;
+            color: white;
+            font-weight: 700;
+            font-size: 1rem;
+        }
+        
+        .risk-bar.low {
+            background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+        }
+        
+        .risk-bar.medium {
+            background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
+        }
+        
+        .risk-bar.high {
+            background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
+        }
+        
+        .risk-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 5px;
+            font-size: 0.85rem;
+            color: #64748b;
+        }
+        
+        /* Visualization Grid */
+        .viz-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        body.dark-mode .chart-container {
+            background: #334155;
+        }
+        
+        body.dark-mode .chart-title {
+            color: #f1f5f9;
+        }
+        
+        body.dark-mode .gauge-value {
+            color: #f1f5f9;
+        }
+        
+        body.dark-mode .gauge-label,
+        body.dark-mode .gauge-description {
+            color: #cbd5e1;
+        }
+        
+        body.dark-mode .risk-bar-container {
+            background: #1e293b;
+        }
+        
         /* Print Styles */
         @media print {
             .analysis-actions,
@@ -518,6 +660,10 @@
             }
             
             .analysis-section {
+                page-break-inside: avoid;
+            }
+            
+            .chart-container {
                 page-break-inside: avoid;
             }
         }
@@ -1464,6 +1610,11 @@
                 
                 // Add table sorting functionality
                 addTableSorting();
+                
+                // Add visualizations
+                setTimeout(() => {
+                    addVisualizations(result);
+                }, 100);
             }
 
             // Show error
@@ -1614,6 +1765,238 @@
             // Load dark mode preference on startup
             if (localStorage.getItem('darkMode') === 'true') {
                 document.body.classList.add('dark-mode');
+            }
+            
+            // Add visualizations to analysis
+            function addVisualizations(result) {
+                const analysisBody = document.getElementById('analysisBody');
+                if (!analysisBody) return;
+                
+                // Extract data from analysis text
+                const analysisText = result.full_analysis || '';
+                const sentiment = extractSentiment(analysisText);
+                const riskScore = extractRiskScore(analysisText);
+                const metrics = extractMetrics(analysisText);
+                
+                // Create visualization container
+                const vizContainer = document.createElement('div');
+                vizContainer.className = 'viz-grid';
+                
+                // Add Sentiment Gauge
+                if (sentiment !== null) {
+                    vizContainer.innerHTML += createSentimentGauge(sentiment);
+                }
+                
+                // Add Risk Score Bar
+                if (riskScore !== null) {
+                    vizContainer.innerHTML += createRiskScoreBar(riskScore);
+                }
+                
+                // Insert at the beginning of analysis body
+                if (vizContainer.innerHTML) {
+                    analysisBody.insertBefore(vizContainer, analysisBody.firstChild);
+                    
+                    // Render charts after DOM insertion
+                    setTimeout(() => {
+                        if (sentiment !== null) renderSentimentChart(sentiment);
+                        if (riskScore !== null) animateRiskBar(riskScore);
+                    }, 50);
+                }
+                
+                console.log('📊 Visualisierungen hinzugefügt');
+            }
+            
+            // Extract sentiment from analysis text (0-100)
+            function extractSentiment(text) {
+                const lowerText = text.toLowerCase();
+                
+                // Count positive and negative keywords
+                const positiveWords = ['positiv', 'stark', 'wachstum', 'gewinn', 'bullish', 'kaufen', 'empfehlung: kauf', 'chancen überwiegen'];
+                const negativeWords = ['negativ', 'schwach', 'verlust', 'risiko', 'bearish', 'verkaufen', 'empfehlung: verkauf', 'risiken überwiegen'];
+                
+                let positiveCount = 0;
+                let negativeCount = 0;
+                
+                positiveWords.forEach(word => {
+                    const matches = (lowerText.match(new RegExp(word, 'g')) || []).length;
+                    positiveCount += matches;
+                });
+                
+                negativeWords.forEach(word => {
+                    const matches = (lowerText.match(new RegExp(word, 'g')) || []).length;
+                    negativeCount += matches;
+                });
+                
+                if (positiveCount === 0 && negativeCount === 0) return null;
+                
+                // Calculate sentiment (0 = bearish, 50 = neutral, 100 = bullish)
+                const total = positiveCount + negativeCount;
+                const sentiment = (positiveCount / total) * 100;
+                
+                return Math.round(sentiment);
+            }
+            
+            // Extract risk score from analysis text (0-100)
+            function extractRiskScore(text) {
+                const lowerText = text.toLowerCase();
+                
+                // Look for explicit risk mentions
+                const riskPatterns = [
+                    /risiko[\s:]*([\w\säöü]+)/gi,
+                    /risk[\s:]*([\w\s]+)/gi,
+                    /volatil/gi,
+                    /unsicher/gi,
+                    /gefahr/gi
+                ];
+                
+                let riskMentions = 0;
+                riskPatterns.forEach(pattern => {
+                    const matches = (lowerText.match(pattern) || []).length;
+                    riskMentions += matches;
+                });
+                
+                // High risk keywords
+                const highRiskWords = ['hohes risiko', 'sehr volatil', 'unsicher', 'vorsicht', 'gefahr'];
+                const lowRiskWords = ['stabiles', 'sicher', 'solide', 'geringes risiko', 'niedrig'];
+                
+                let riskScore = 50; // Default medium
+                
+                highRiskWords.forEach(word => {
+                    if (lowerText.includes(word)) riskScore += 10;
+                });
+                
+                lowRiskWords.forEach(word => {
+                    if (lowerText.includes(word)) riskScore -= 10;
+                });
+                
+                riskScore = Math.max(0, Math.min(100, riskScore));
+                
+                return riskMentions > 0 ? riskScore : null;
+            }
+            
+            // Extract numeric metrics from analysis
+            function extractMetrics(text) {
+                const metrics = {};
+                
+                // Look for price/kurs
+                const priceMatch = text.match(/(?:kurs|preis|price)[:\s]*\$?([\d,\.]+)/i);
+                if (priceMatch) metrics.price = parseFloat(priceMatch[1].replace(',', ''));
+                
+                // Look for percentages
+                const percentMatches = text.match(/([+-]?\d+\.?\d*)%/g);
+                if (percentMatches) {
+                    metrics.changes = percentMatches.map(m => parseFloat(m));
+                }
+                
+                return metrics;
+            }
+            
+            // Create Sentiment Gauge HTML
+            function createSentimentGauge(sentiment) {
+                const sentimentText = sentiment >= 70 ? 'Bullish' : sentiment >= 40 ? 'Neutral' : 'Bearish';
+                const sentimentColor = sentiment >= 70 ? '#10b981' : sentiment >= 40 ? '#f59e0b' : '#ef4444';
+                const sentimentIcon = sentiment >= 70 ? '📈' : sentiment >= 40 ? '➡️' : '📉';
+                
+                return `
+                    <div class="chart-container">
+                        <div class="chart-title">
+                            <span>📊</span> Sentiment-Analyse
+                        </div>
+                        <div class="sentiment-gauge">
+                            <div class="gauge-chart">
+                                <canvas id="sentimentChart"></canvas>
+                            </div>
+                            <div class="gauge-info">
+                                <div class="gauge-label">Marktstimmung</div>
+                                <div class="gauge-value" style="color: ${sentimentColor};">
+                                    ${sentimentIcon} ${sentimentText}
+                                </div>
+                                <div class="gauge-description">
+                                    Der Sentiment-Score von <strong>${sentiment}/100</strong> basiert auf der Analyse von positiven und negativen Schlüsselwörtern in der gesamten Bewertung.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Create Risk Score Bar HTML
+            function createRiskScoreBar(riskScore) {
+                const riskLevel = riskScore >= 70 ? 'Hoch' : riskScore >= 40 ? 'Mittel' : 'Niedrig';
+                const riskClass = riskScore >= 70 ? 'high' : riskScore >= 40 ? 'medium' : 'low';
+                const riskIcon = riskScore >= 70 ? '⚠️' : riskScore >= 40 ? '⚡' : '✅';
+                
+                return `
+                    <div class="chart-container">
+                        <div class="chart-title">
+                            <span>🎯</span> Risiko-Bewertung
+                        </div>
+                        <div class="risk-score">
+                            <div class="gauge-label">Risiko-Level: <strong>${riskIcon} ${riskLevel}</strong></div>
+                            <div class="risk-bar-container">
+                                <div class="risk-bar ${riskClass}" id="riskBar" style="width: 0%;">
+                                    ${riskScore}%
+                                </div>
+                            </div>
+                            <div class="risk-labels">
+                                <span>Niedrig</span>
+                                <span>Mittel</span>
+                                <span>Hoch</span>
+                            </div>
+                            <div class="gauge-description">
+                                Das Risiko wird auf Basis von Volatilität, Marktbedingungen und erwähnten Risikofaktoren bewertet.
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Render Sentiment Chart (Gauge)
+            function renderSentimentChart(sentiment) {
+                const canvas = document.getElementById('sentimentChart');
+                if (!canvas) return;
+                
+                const ctx = canvas.getContext('2d');
+                
+                // Determine color based on sentiment
+                const color = sentiment >= 70 ? '#10b981' : sentiment >= 40 ? '#f59e0b' : '#ef4444';
+                
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Sentiment', 'Rest'],
+                        datasets: [{
+                            data: [sentiment, 100 - sentiment],
+                            backgroundColor: [color, '#e2e8f0'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        circumference: 180,
+                        rotation: 270,
+                        cutout: '75%',
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                enabled: false
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Animate Risk Bar
+            function animateRiskBar(riskScore) {
+                const bar = document.getElementById('riskBar');
+                if (!bar) return;
+                
+                setTimeout(() => {
+                    bar.style.width = riskScore + '%';
+                }, 100);
             }
             
             // Auto-save form data to localStorage
