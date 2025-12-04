@@ -215,8 +215,8 @@ body {
 /* Checkbox Group */
 .checkbox-group {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.5rem;
+    grid-template-columns: 1fr;
+    gap: 0.4rem;
 }
 
 .checkbox-label {
