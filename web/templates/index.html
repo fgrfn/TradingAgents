@@ -17,6 +17,7 @@
             line-height: 1.6;
             max-height: calc(100vh - 250px);
             overflow-y: auto;
+            scroll-behavior: smooth;
         }
         
         /* Decision Banner */
@@ -156,17 +157,43 @@
         /* Lists */
         .analysis-section ul {
             margin: 15px 0;
-            padding-left: 25px;
+            padding-left: 0;
+            list-style: none;
         }
         
         .analysis-section li {
-            margin-bottom: 10px;
+            margin-bottom: 12px;
             color: #334155;
-            line-height: 1.6;
+            line-height: 1.7;
+            padding-left: 30px;
+            position: relative;
         }
         
-        .analysis-section li::marker {
+        .analysis-section li::before {
+            content: "▸";
             color: #667eea;
+            font-weight: bold;
+            font-size: 1.2em;
+            position: absolute;
+            left: 8px;
+        }
+        
+        .analysis-section ol {
+            margin: 15px 0;
+            padding-left: 30px;
+            counter-reset: item;
+        }
+        
+        .analysis-section ol li {
+            counter-increment: item;
+        }
+        
+        .analysis-section ol li::before {
+            content: counter(item) ".";
+            color: #667eea;
+            font-weight: 700;
+            position: absolute;
+            left: 0;
         }
         
         /* Highlight Boxes */
@@ -940,33 +967,43 @@
             let progressInterval = null;
 
             // Show results
-            // Simple Markdown-to-HTML converter
+            // Enhanced Markdown-to-HTML converter
             function markdownToHtml(markdown) {
                 if (!markdown) return '';
                 
                 let html = markdown;
                 
                 // Headers
-                html = html.replace(/^### (.*$)/gim, '<h4>$1</h4>');
-                html = html.replace(/^## (.*$)/gim, '<h3>$1</h3>');
+                html = html.replace(/^#### (.*$)/gim, '<h4>$1</h4>');
+                html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+                html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
                 html = html.replace(/^# (.*$)/gim, '<h2>$1</h2>');
                 
-                // Bold
+                // Bold and italic
+                html = html.replace(/\*\*\*(.*?)\*\*\*/gim, '<strong><em>$1</em></strong>');
                 html = html.replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>');
+                html = html.replace(/\*(.*?)\*/gim, '<em>$1</em>');
                 
                 // Horizontal rules
                 html = html.replace(/^---$/gim, '<hr>');
+                html = html.replace(/^\*\*\*$/gim, '<hr>');
                 
-                // Tables
-                html = html.replace(/\n\|(.*?)\|\n/g, function(match) {
-                    const rows = match.trim().split('\n');
-                    let tableHtml = '<table class="analysis-table">';
+                // Tables (improved detection)
+                const tableRegex = /((?:^\|.+\|\s*$\n)+)/gm;
+                html = html.replace(tableRegex, function(match) {
+                    const rows = match.trim().split('\n').filter(r => r.trim());
+                    let tableHtml = '<table class="analysis-table"><thead>';
+                    let inBody = false;
                     
                     rows.forEach((row, idx) => {
-                        if (row.includes('---')) return; // Skip separator row
+                        if (row.includes('---') || row.includes('===')) {
+                            tableHtml += '</thead><tbody>';
+                            inBody = true;
+                            return;
+                        }
                         
                         const cells = row.split('|').filter(c => c.trim());
-                        const tag = idx === 0 ? 'th' : 'td';
+                        const tag = !inBody && idx === 0 ? 'th' : 'td';
                         tableHtml += '<tr>';
                         cells.forEach(cell => {
                             tableHtml += `<${tag}>${cell.trim()}</${tag}>`;
@@ -974,21 +1011,33 @@
                         tableHtml += '</tr>';
                     });
                     
-                    tableHtml += '</table>';
-                    return tableHtml;
+                    tableHtml += inBody ? '</tbody></table>' : '</thead></table>';
+                    return '\n' + tableHtml + '\n';
                 });
+                
+                // Unordered lists
+                html = html.replace(/^[\s]*[-*+]\s+(.+)$/gm, '<li>$1</li>');
+                html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+                html = html.replace(/<\/ul>\s*<ul>/g, '');
+                
+                // Ordered lists
+                html = html.replace(/^[\s]*\d+\.\s+(.+)$/gm, '<li>$1</li>');
                 
                 // Line breaks
                 html = html.replace(/\n\n/g, '</p><p>');
                 html = '<p>' + html + '</p>';
                 
-                // Clean up empty paragraphs
+                // Clean up
                 html = html.replace(/<p><\/p>/g, '');
                 html = html.replace(/<p>\s*<h/g, '<h');
                 html = html.replace(/<\/h(\d)>\s*<\/p>/g, '</h$1>');
                 html = html.replace(/<p>\s*<table/g, '<table');
                 html = html.replace(/<\/table>\s*<\/p>/g, '</table>');
                 html = html.replace(/<p>\s*<hr>\s*<\/p>/g, '<hr>');
+                html = html.replace(/<p>\s*<ul>/g, '<ul>');
+                html = html.replace(/<\/ul>\s*<\/p>/g, '</ul>');
+                html = html.replace(/<p>\s*<li>/g, '<li>');
+                html = html.replace(/<\/li>\s*<\/p>/g, '</li>');
                 
                 return html;
             }
@@ -997,16 +1046,28 @@
                 // Add icons to section headers
                 const sectionIcons = {
                     'zusammenfassung': '📋',
+                    'executive summary': '📋',
                     'entscheidung': '✅',
+                    'decision': '✅',
                     'empfehlung': '💡',
+                    'recommendation': '💡',
                     'marktanalyse': '📊',
+                    'market analysis': '📊',
                     'fundamentalanalyse': '💼',
+                    'fundamental': '💼',
                     'news': '📰',
+                    'nachrichten': '📰',
                     'social media': '💬',
                     'risiken': '⚠️',
+                    'risks': '⚠️',
                     'chancen': '🎯',
+                    'opportunities': '🎯',
                     'technische analyse': '📈',
-                    'fazit': '🔍'
+                    'technical analysis': '📈',
+                    'fazit': '🔍',
+                    'conclusion': '🔍',
+                    'sentiment': '😊',
+                    'stimmung': '😊'
                 };
                 
                 // Wrap in sections
@@ -1028,13 +1089,58 @@
                 // Remove empty first section
                 enhanced = enhanced.replace('<div class="analysis-section"></div>', '');
                 
-                // Convert strong text patterns to info cards
-                enhanced = enhanced.replace(/<p><strong>(Kurs|Preis|Volumen|Marktkapitalisierung|P\/E Ratio|EPS|Dividende):<\/strong>\s*(.*?)<\/p>/gi, 
-                    '<div class="info-cards"><div class="info-card"><div class="info-card-label">$1</div><div class="info-card-value">$2</div></div></div>');
+                // Format numbers (currency, percentages, large numbers)
+                enhanced = enhanced.replace(/\$(\d+(?:,\d{3})*(?:\.\d{2})?)/g, '<strong style="color: #1e40af;">\$$1</strong>');
+                enhanced = enhanced.replace(/([+-]?\d+\.?\d*)%/g, function(match, num) {
+                    const value = parseFloat(num);
+                    const color = value >= 0 ? '#10b981' : '#ef4444';
+                    const sign = value > 0 ? '+' : '';
+                    return `<strong style="color: ${color};">${sign}${num}%</strong>`;
+                });
                 
-                // Highlight positive/negative mentions
-                enhanced = enhanced.replace(/\b(steigend|positiv|stark|wachstum|gewinn|potenzial)\b/gi, '<span style="color: #10b981; font-weight: 600;">$1</span>');
-                enhanced = enhanced.replace(/\b(fallend|negativ|schwach|verlust|risiko|gefahr)\b/gi, '<span style="color: #ef4444; font-weight: 600;">$1</span>');
+                // Convert strong text patterns to info cards (grouped)
+                const infoCardPattern = /(<p><strong>(?:Kurs|Preis|Volumen|Marktkapitalisierung|Market Cap|P\/E Ratio|EPS|Dividende|KGV|Umsatz|Revenue):<\/strong>\s*.*?<\/p>\s*)+/gi;
+                enhanced = enhanced.replace(infoCardPattern, function(match) {
+                    const cards = match.match(/<p><strong>(.*?):<\/strong>\s*(.*?)<\/p>/gi);
+                    if (!cards) return match;
+                    
+                    let cardsHtml = '<div class="info-cards">';
+                    cards.forEach(card => {
+                        const cardMatch = card.match(/<p><strong>(.*?):<\/strong>\s*(.*?)<\/p>/);
+                        if (cardMatch) {
+                            const [, label, value] = cardMatch;
+                            cardsHtml += `<div class="info-card"><div class="info-card-label">${label}</div><div class="info-card-value">${value}</div></div>`;
+                        }
+                    });
+                    cardsHtml += '</div>';
+                    return cardsHtml;
+                });
+                
+                // Create highlight boxes for important information
+                enhanced = enhanced.replace(/<p><strong>(Wichtig|Important|Achtung|Warning|Hinweis|Note):<\/strong>\s*(.*?)<\/p>/gi, 
+                    '<div class="highlight-box warning"><strong>$1:</strong> $2</div>');
+                
+                enhanced = enhanced.replace(/<p><strong>(Risiko|Risk|Vorsicht|Caution):<\/strong>\s*(.*?)<\/p>/gi, 
+                    '<div class="highlight-box danger"><strong>$1:</strong> $2</div>');
+                
+                enhanced = enhanced.replace(/<p><strong>(Chance|Opportunity|Potenzial|Potential):<\/strong>\s*(.*?)<\/p>/gi, 
+                    '<div class="highlight-box success"><strong>$1:</strong> $2</div>');
+                
+                // Highlight positive/negative mentions (extended list)
+                const positiveKeywords = ['steigend', 'positiv', 'stark', 'wachstum', 'gewinn', 'potenzial', 'bullish', 
+                                         'aufwärts', 'erhöht', 'verbessert', 'optimistisch', 'stabil', 'solide'];
+                const negativeKeywords = ['fallend', 'negativ', 'schwach', 'verlust', 'risiko', 'gefahr', 'bearish',
+                                         'abwärts', 'gesunken', 'verschlechtert', 'pessimistisch', 'volatil', 'unsicher'];
+                
+                positiveKeywords.forEach(keyword => {
+                    const regex = new RegExp(`\\b(${keyword})\\b`, 'gi');
+                    enhanced = enhanced.replace(regex, '<span style="color: #10b981; font-weight: 600;">$1</span>');
+                });
+                
+                negativeKeywords.forEach(keyword => {
+                    const regex = new RegExp(`\\b(${keyword})\\b`, 'gi');
+                    enhanced = enhanced.replace(regex, '<span style="color: #ef4444; font-weight: 600;">$1</span>');
+                });
                 
                 return enhanced;
             }
