@@ -76,6 +76,11 @@ body {
     grid-template-columns: 450px 1fr;
     gap: 1.5rem;
     margin-bottom: 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.main-content.fullwidth {
+    grid-template-columns: 1fr;
 }
 
 @media (max-width: 1200px) {
@@ -91,6 +96,20 @@ body {
     border-radius: 12px;
     padding: 2rem;
     box-shadow: var(--shadow-lg);
+    transition: all 0.3s ease;
+}
+
+.config-panel.hidden {
+    display: none;
+}
+
+.results-panel.fullwidth {
+    max-width: 100%;
+    min-height: calc(100vh - 200px);
+}
+
+.results-panel.fullwidth .analysis-content {
+    min-height: calc(100vh - 250px);
 }
 
 .config-panel h2,

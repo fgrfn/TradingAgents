@@ -16,7 +16,8 @@
             border-radius: 12px;
             margin-top: 15px;
             line-height: 1.6;
-            max-height: calc(100vh - 250px);
+            height: calc(100vh - 250px);
+            min-height: calc(100vh - 250px);
             overflow-y: auto;
             scroll-behavior: smooth;
         }
@@ -2165,12 +2166,32 @@
                 progressFill.style.width = '0%';
                 statusText.textContent = 'Starte Analyse...';
                 document.getElementById('analyzeBtn').disabled = true;
+                
+                // Switch to fullwidth mode
+                const mainContent = document.querySelector('.main-content');
+                const configPanel = document.querySelector('.config-panel');
+                const resultsPanel = document.querySelector('.results-panel');
+                
+                if (mainContent) mainContent.classList.add('fullwidth');
+                if (configPanel) configPanel.classList.add('hidden');
+                if (resultsPanel) resultsPanel.classList.add('fullwidth');
             }
 
             // Hide loading state
             function hideLoading() {
                 loadingState.style.display = 'none';
                 document.getElementById('analyzeBtn').disabled = false;
+            }
+            
+            // Show config panel (for going back)
+            function showConfigPanel() {
+                const mainContent = document.querySelector('.main-content');
+                const configPanel = document.querySelector('.config-panel');
+                const resultsPanel = document.querySelector('.results-panel');
+                
+                if (mainContent) mainContent.classList.remove('fullwidth');
+                if (configPanel) configPanel.classList.remove('hidden');
+                if (resultsPanel) resultsPanel.classList.remove('fullwidth');
             }
 
             // Progress interval for cleanup
@@ -2403,6 +2424,9 @@
                 resultsContent.innerHTML = `
                     <div class="analysis-content">
                         <div class="analysis-actions">
+                            <button class="btn-action btn-copy tooltip" data-tooltip="Zurück zur Konfiguration" id="backToConfigBtn" style="background: #667eea; color: white;">
+                                <i class="fas fa-arrow-left"></i> Zurück
+                            </button>
                             <button class="btn-action btn-export tooltip" data-tooltip="Als HTML speichern" id="exportBtn">
                                 <i class="fas fa-download"></i> Export
                             </button>
@@ -2428,6 +2452,7 @@
                 `;
                 
                 // Add event listeners to action buttons
+                document.getElementById('backToConfigBtn').addEventListener('click', showConfigPanel);
                 document.getElementById('exportBtn').addEventListener('click', exportAnalysis);
                 document.getElementById('copyBtn').addEventListener('click', copyAnalysis);
                 document.getElementById('printBtn').addEventListener('click', printAnalysis);
