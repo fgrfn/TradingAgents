@@ -276,6 +276,251 @@
         .stat-value.negative {
             color: #ef4444;
         }
+        
+        /* Analysis Action Buttons */
+        .analysis-actions {
+            position: sticky;
+            top: 0;
+            background: white;
+            padding: 15px 20px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            gap: 10px;
+            z-index: 10;
+            border-radius: 12px 12px 0 0;
+        }
+        
+        .btn-action {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+        
+        .btn-action:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        
+        .btn-export {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-copy {
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid #cbd5e1;
+        }
+        
+        .btn-print {
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid #cbd5e1;
+        }
+        
+        .btn-dark-mode {
+            background: #1e293b;
+            color: white;
+            margin-left: auto;
+        }
+        
+        /* Dark Mode */
+        body.dark-mode {
+            background: #0f172a;
+            color: #e2e8f0;
+        }
+        
+        body.dark-mode .analysis-content {
+            background: #1e293b;
+        }
+        
+        body.dark-mode .analysis-section {
+            background: #0f172a;
+            color: #e2e8f0;
+        }
+        
+        body.dark-mode .analysis-section p,
+        body.dark-mode .analysis-section li {
+            color: #cbd5e1;
+        }
+        
+        body.dark-mode .analysis-section h2,
+        body.dark-mode .analysis-section h3,
+        body.dark-mode .analysis-section h4 {
+            color: #f1f5f9;
+        }
+        
+        body.dark-mode .info-card {
+            background: #334155;
+            color: #e2e8f0;
+        }
+        
+        body.dark-mode .info-card-label {
+            color: #94a3b8;
+        }
+        
+        body.dark-mode .info-card-value {
+            color: #f1f5f9;
+        }
+        
+        body.dark-mode .highlight-box {
+            background: #334155;
+        }
+        
+        /* Enhanced Tables */
+        .analysis-section table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .analysis-section table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 14px;
+            text-align: left;
+            font-weight: 600;
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+        }
+        
+        .analysis-section table th:hover {
+            background: linear-gradient(135deg, #5568d3 0%, #6a4193 100%);
+        }
+        
+        .analysis-section table th::after {
+            content: '⇅';
+            position: absolute;
+            right: 10px;
+            opacity: 0.5;
+            font-size: 0.8em;
+        }
+        
+        .analysis-section table td {
+            padding: 12px 14px;
+            border-bottom: 1px solid #f1f5f9;
+            color: #334155;
+        }
+        
+        .analysis-section table tr:hover {
+            background: #f8fafc;
+        }
+        
+        body.dark-mode .analysis-section table {
+            background: #334155;
+        }
+        
+        body.dark-mode .analysis-section table td {
+            color: #e2e8f0;
+            border-bottom-color: #475569;
+        }
+        
+        body.dark-mode .analysis-section table tr:hover {
+            background: #475569;
+        }
+        
+        /* Loading Animation Enhancement */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .loading-state {
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        /* Tooltip for actions */
+        .tooltip {
+            position: relative;
+        }
+        
+        .tooltip::before {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 6px 12px;
+            background: #1e293b;
+            color: white;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+            margin-bottom: 5px;
+        }
+        
+        .tooltip:hover::before {
+            opacity: 1;
+        }
+        
+        /* Mobile Optimization */
+        @media (max-width: 768px) {
+            .analysis-content {
+                max-height: calc(100vh - 200px);
+            }
+            
+            .decision-banner {
+                padding: 20px;
+            }
+            
+            .decision-value {
+                font-size: 2rem;
+            }
+            
+            .analysis-section {
+                margin: 10px;
+                padding: 15px;
+            }
+            
+            .info-cards {
+                grid-template-columns: 1fr;
+            }
+            
+            .analysis-actions {
+                flex-wrap: wrap;
+            }
+            
+            .btn-action {
+                flex: 1;
+                min-width: 120px;
+            }
+            
+            .section-icon {
+                font-size: 1.5rem;
+            }
+        }
+        
+        /* Print Styles */
+        @media print {
+            .analysis-actions,
+            .btn-action {
+                display: none !important;
+            }
+            
+            .analysis-content {
+                max-height: none;
+                overflow: visible;
+            }
+            
+            .analysis-section {
+                page-break-inside: avoid;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1192,14 +1437,33 @@
 
                 resultsContent.innerHTML = `
                     <div class="analysis-content">
+                        <div class="analysis-actions">
+                            <button class="btn-action btn-export tooltip" data-tooltip="Als HTML speichern" onclick="exportAnalysis()">
+                                <i class="fas fa-download"></i> Export
+                            </button>
+                            <button class="btn-action btn-copy tooltip" data-tooltip="In Zwischenablage kopieren" onclick="copyAnalysis()">
+                                <i class="fas fa-copy"></i> Kopieren
+                            </button>
+                            <button class="btn-action btn-print tooltip" data-tooltip="Drucken" onclick="printAnalysis()">
+                                <i class="fas fa-print"></i> Drucken
+                            </button>
+                            <button class="btn-action btn-dark-mode tooltip" data-tooltip="Dunklen Modus umschalten" onclick="toggleDarkMode()">
+                                <i class="fas fa-moon"></i>
+                            </button>
+                        </div>
                         <div class="decision-banner ${decisionClass}">
                             <div class="decision-title">${decisionIcon} Handelsentscheidung für ${result.ticker || 'N/A'}</div>
                             <div class="decision-value">${decision}</div>
                             <div class="decision-subtitle">Analysedatum: ${result.date || 'N/A'}</div>
                         </div>
-                        ${analysisHtml}
+                        <div id="analysisBody">
+                            ${analysisHtml}
+                        </div>
                     </div>
                 `;
+                
+                // Add table sorting functionality
+                addTableSorting();
             }
 
             // Show error
@@ -1209,6 +1473,147 @@
                 errorState.style.display = 'block';
                 document.getElementById('errorMessage').textContent = message;
                 document.getElementById('analyzeBtn').disabled = false;
+            }
+            
+            // Export analysis as HTML
+            function exportAnalysis() {
+                const analysisBody = document.getElementById('analysisBody');
+                if (!analysisBody) return;
+                
+                const ticker = document.getElementById('ticker').value || 'UNKNOWN';
+                const date = new Date().toISOString().split('T')[0];
+                
+                const htmlContent = `
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analyse ${ticker} - ${date}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
+        h2 { color: #1e293b; border-bottom: 2px solid #667eea; padding-bottom: 10px; }
+        h3 { color: #475569; margin-top: 20px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th { background: #667eea; color: white; padding: 12px; text-align: left; }
+        td { padding: 10px; border-bottom: 1px solid #e2e8f0; }
+        .highlight { background: #fef3c7; padding: 15px; border-left: 4px solid #f59e0b; margin: 15px 0; }
+    </style>
+</head>
+<body>
+    ${analysisBody.innerHTML}
+</body>
+</html>`;
+                
+                const blob = new Blob([htmlContent], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Analyse_${ticker}_${date}.html`;
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                console.log('✅ Analyse exportiert');
+            }
+            
+            // Copy analysis to clipboard
+            async function copyAnalysis() {
+                const analysisBody = document.getElementById('analysisBody');
+                if (!analysisBody) return;
+                
+                try {
+                    const text = analysisBody.innerText;
+                    await navigator.clipboard.writeText(text);
+                    
+                    // Visual feedback
+                    const btn = event.target.closest('.btn-copy');
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = '<i class="fas fa-check"></i> Kopiert!';
+                    btn.style.background = '#10b981';
+                    btn.style.color = 'white';
+                    
+                    setTimeout(() => {
+                        btn.innerHTML = originalText;
+                        btn.style.background = '';
+                        btn.style.color = '';
+                    }, 2000);
+                    
+                    console.log('✅ Analyse in Zwischenablage kopiert');
+                } catch (err) {
+                    console.error('❌ Fehler beim Kopieren:', err);
+                    alert('Fehler beim Kopieren in die Zwischenablage');
+                }
+            }
+            
+            // Print analysis
+            function printAnalysis() {
+                window.print();
+                console.log('🖨️ Druckvorschau geöffnet');
+            }
+            
+            // Toggle dark mode
+            function toggleDarkMode() {
+                document.body.classList.toggle('dark-mode');
+                const isDark = document.body.classList.contains('dark-mode');
+                localStorage.setItem('darkMode', isDark);
+                
+                const btn = event.target.closest('.btn-dark-mode');
+                const icon = btn.querySelector('i');
+                icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+                
+                console.log(`🌓 Dark Mode: ${isDark ? 'aktiviert' : 'deaktiviert'}`);
+            }
+            
+            // Add table sorting functionality
+            function addTableSorting() {
+                const tables = document.querySelectorAll('.analysis-section table');
+                
+                tables.forEach(table => {
+                    const headers = table.querySelectorAll('th');
+                    
+                    headers.forEach((header, index) => {
+                        header.addEventListener('click', () => {
+                            const tbody = table.querySelector('tbody') || table;
+                            const rows = Array.from(tbody.querySelectorAll('tr')).slice(1); // Skip header
+                            
+                            const isAscending = header.classList.contains('sort-asc');
+                            
+                            // Remove all sort classes
+                            headers.forEach(h => h.classList.remove('sort-asc', 'sort-desc'));
+                            
+                            // Add appropriate class
+                            header.classList.add(isAscending ? 'sort-desc' : 'sort-asc');
+                            
+                            rows.sort((a, b) => {
+                                const aValue = a.cells[index]?.textContent.trim() || '';
+                                const bValue = b.cells[index]?.textContent.trim() || '';
+                                
+                                // Try numeric comparison
+                                const aNum = parseFloat(aValue.replace(/[^0-9.-]/g, ''));
+                                const bNum = parseFloat(bValue.replace(/[^0-9.-]/g, ''));
+                                
+                                if (!isNaN(aNum) && !isNaN(bNum)) {
+                                    return isAscending ? bNum - aNum : aNum - bNum;
+                                }
+                                
+                                // String comparison
+                                return isAscending ? 
+                                    bValue.localeCompare(aValue) : 
+                                    aValue.localeCompare(bValue);
+                            });
+                            
+                            // Reappend sorted rows
+                            rows.forEach(row => tbody.appendChild(row));
+                            
+                            console.log(`📊 Tabelle nach Spalte ${index + 1} sortiert`);
+                        });
+                    });
+                });
+            }
+            
+            // Load dark mode preference on startup
+            if (localStorage.getItem('darkMode') === 'true') {
+                document.body.classList.add('dark-mode');
             }
             
             // Auto-save form data to localStorage
