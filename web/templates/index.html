@@ -2716,10 +2716,22 @@
                     const data = await response.json();
                     
                     if (!data.success || !data.results || data.results.length === 0) {
-                        autocompleteDropdown.innerHTML = '<div class="autocomplete-no-results">Keine Treffer gefunden</div>';
-                        autocompleteDropdown.classList.add('show');
-                        tickerStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i>';
-                        tickerStatus.className = 'input-status invalid';
+                        // Check if it might be a valid ticker format even if not in our list
+                        const isValidFormat = /^[A-Z0-9]{1,6}(\.[A-Z]{1,3})?$/i.test(query);
+                        
+                        if (isValidFormat) {
+                            // Valid format but not in list - user can still proceed
+                            autocompleteDropdown.innerHTML = '<div class="autocomplete-no-results">Nicht in der Liste, aber gültiges Format</div>';
+                            autocompleteDropdown.classList.add('show');
+                            tickerStatus.innerHTML = '<i class="fas fa-check-circle"></i>';
+                            tickerStatus.className = 'input-status valid';
+                        } else {
+                            // Invalid format
+                            autocompleteDropdown.innerHTML = '<div class="autocomplete-no-results">Ungültiges Format (z.B. AAPL oder RHM.DE)</div>';
+                            autocompleteDropdown.classList.add('show');
+                            tickerStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i>';
+                            tickerStatus.className = 'input-status invalid';
+                        }
                         return;
                     }
                     
