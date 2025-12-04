@@ -1242,6 +1242,80 @@
                 page-break-inside: avoid;
             }
         }
+        
+        /* Ticker Grouping */
+        .ticker-group {
+            margin-bottom: 20px;
+        }
+        
+        .ticker-group-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 8px 8px 0 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+        }
+        
+        .ticker-count {
+            font-size: 0.85rem;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+        
+        .ticker-group-items {
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            padding: 12px;
+        }
+        
+        .ticker-group-items .history-item {
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .ticker-group-items .history-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        /* Compare Selection Highlight */
+        .history-item.compare-selected {
+            border: 3px solid #10b981 !important;
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%) !important;
+            box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3) !important;
+            transform: scale(1.02);
+        }
+        
+        .history-item.compare-selected::before {
+            content: '✓';
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            width: 32px;
+            height: 32px;
+            background: #10b981;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+            z-index: 10;
+        }
+        
+        .history-item {
+            position: relative;
+        }
     </style>
 </head>
 <body>
@@ -2594,14 +2668,15 @@
                 const sentiment = extractSentiment(analysisText);
                 const riskScore = extractRiskScore(analysisText);
                 const metrics = extractMetrics(analysisText);
+                const decision = result.decision || '';
                 
                 // Create visualization container
                 const vizContainer = document.createElement('div');
                 vizContainer.className = 'viz-grid';
                 
-                // Add Sentiment Gauge
+                // Add Sentiment Gauge with decision
                 if (sentiment !== null) {
-                    vizContainer.innerHTML += createSentimentGauge(sentiment);
+                    vizContainer.innerHTML += createSentimentGauge(sentiment, decision);
                 }
                 
                 // Add Risk Score Bar
@@ -2709,10 +2784,28 @@
             }
             
             // Create Sentiment Gauge HTML
-            function createSentimentGauge(sentiment) {
+            function createSentimentGauge(sentiment, decision) {
                 const sentimentText = sentiment >= 70 ? 'Bullish' : sentiment >= 40 ? 'Neutral' : 'Bearish';
                 const sentimentColor = sentiment >= 70 ? '#10b981' : sentiment >= 40 ? '#f59e0b' : '#ef4444';
                 const sentimentIcon = sentiment >= 70 ? '📈' : sentiment >= 40 ? '➡️' : '📉';
+                
+                // Determine strategic recommendation color and icon
+                let strategyText = 'Halten';
+                let strategyColor = '#f59e0b';
+                let strategyIcon = '⏸️';
+                
+                if (decision) {
+                    const decisionUpper = decision.toUpperCase();
+                    if (decisionUpper.includes('KAUF') || decisionUpper.includes('BUY')) {
+                        strategyText = 'Kaufen';
+                        strategyColor = '#10b981';
+                        strategyIcon = '📈';
+                    } else if (decisionUpper.includes('VERKAUF') || decisionUpper.includes('SELL')) {
+                        strategyText = 'Verkaufen';
+                        strategyColor = '#ef4444';
+                        strategyIcon = '📉';
+                    }
+                }
                 
                 return `
                     <div class="chart-container">
@@ -2724,12 +2817,21 @@
                                 <canvas id="sentimentChart"></canvas>
                             </div>
                             <div class="gauge-info">
-                                <div class="gauge-label">Marktstimmung</div>
+                                <div class="gauge-label">Technisches Sentiment</div>
                                 <div class="gauge-value" style="color: ${sentimentColor};">
                                     ${sentimentIcon} ${sentimentText}
                                 </div>
                                 <div class="gauge-description">
                                     Der Sentiment-Score von <strong>${sentiment}/100</strong> basiert auf der Analyse von positiven und negativen Schlüsselwörtern in der gesamten Bewertung.
+                                </div>
+                                <div style="margin-top: 15px; padding-top: 15px; border-top: 2px solid #e2e8f0;">
+                                    <div class="gauge-label">Strategische Empfehlung</div>
+                                    <div class="gauge-value" style="color: ${strategyColor}; font-size: 1.3rem;">
+                                        ${strategyIcon} ${strategyText}
+                                    </div>
+                                    <div class="gauge-description" style="font-size: 0.85rem; margin-top: 5px;">
+                                        Finale Handelsentscheidung nach ganzheitlicher Analyse
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -3111,11 +3213,18 @@
 
             // Compare functionality
             let compareItems = [];
+            let compareIds = [];
             
             window.addToCompare = async function(analysisId) {
+                // Remove previous markings
+                document.querySelectorAll('.history-item').forEach(item => {
+                    item.classList.remove('compare-selected');
+                });
+                
                 if (compareItems.length >= 2) {
-                    showToast('Maximal 2 Analysen können verglichen werden', 'warning');
+                    showToast('Maximal 2 Analysen können verglichen werden. Neue Auswahl gestartet.', 'warning');
                     compareItems = [];
+                    compareIds = [];
                 }
                 
                 try {
@@ -3124,6 +3233,16 @@
                     
                     if (data.success && data.result) {
                         compareItems.push(data.result);
+                        compareIds.push(analysisId);
+                        
+                        // Mark selected items
+                        compareIds.forEach(id => {
+                            const item = document.getElementById(`history-item-${id}`);
+                            if (item) {
+                                item.classList.add('compare-selected');
+                            }
+                        });
+                        
                         showToast(`Analyse ${compareItems.length}/2 ausgewählt`, 'info', 2000);
                         
                         if (compareItems.length === 2) {
@@ -3176,6 +3295,12 @@
             window.closeCompare = function() {
                 document.getElementById('compareContainer')?.classList.remove('active');
                 compareItems = [];
+                compareIds = [];
+                
+                // Remove markings
+                document.querySelectorAll('.history-item').forEach(item => {
+                    item.classList.remove('compare-selected');
+                });
             };
             
             // Repeat Analysis
@@ -3290,47 +3415,78 @@
                     `;
                     return;
                 }
-                historyList.innerHTML = history.map(item => {
-                    const date = new Date(item.created_at);
-                    const formattedDate = date.toLocaleString('de-DE');
-                    const durationMin = (item.duration / 60).toFixed(1);
-                    
-                    let decisionClass = 'hold';
-                    if (item.decision.includes('KAUFEN') || item.decision.includes('BUY')) {
-                        decisionClass = 'buy';
-                    } else if (item.decision.includes('VERKAUFEN') || item.decision.includes('SELL')) {
-                        decisionClass = 'sell';
+                
+                // Group by ticker
+                const grouped = {};
+                history.forEach(item => {
+                    const ticker = item.ticker || 'Unbekannt';
+                    if (!grouped[ticker]) {
+                        grouped[ticker] = [];
                     }
+                    grouped[ticker].push(item);
+                });
+                
+                // Sort each group by date (newest first)
+                Object.keys(grouped).forEach(ticker => {
+                    grouped[ticker].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                });
+                
+                // Generate HTML with grouping
+                historyList.innerHTML = Object.keys(grouped).sort().map(ticker => {
+                    const items = grouped[ticker];
+                    const itemsHtml = items.map(item => {
+                        const date = new Date(item.created_at);
+                        const formattedDate = date.toLocaleString('de-DE');
+                        const durationMin = (item.duration / 60).toFixed(1);
+                        
+                        let decisionClass = 'hold';
+                        if (item.decision.includes('KAUFEN') || item.decision.includes('BUY')) {
+                            decisionClass = 'buy';
+                        } else if (item.decision.includes('VERKAUFEN') || item.decision.includes('SELL')) {
+                            decisionClass = 'sell';
+                        }
+                        
+                        return `
+                            <div class="history-item" id="history-item-${item.id}" data-item-id="${item.id}">
+                                <div class="history-item-header">
+                                    <div>
+                                        <span class="decision-badge ${decisionClass}">${item.decision}</span>
+                                    </div>
+                                    <button class="btn-icon-small" onclick="deleteHistoryItem('${item.id}')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                                <div class="history-item-details">
+                                    <small>
+                                        📅 ${formattedDate} | 
+                                        ⏱️ ${durationMin}min | 
+                                        🤖 ${item.llm_provider} (${item.llm_model}) | 
+                                        📊 Tiefe: ${item.research_depth}
+                                    </small>
+                                </div>
+                                <div style="display: flex; gap: 8px; margin-top: 10px;">
+                                    <button class="btn-link" onclick="loadHistoryAnalysis('${item.id}')" style="flex: 1;">
+                                        <i class="fas fa-eye"></i> Details
+                                    </button>
+                                    <button class="btn-link btn-compare" onclick="addToCompare('${item.id}')" style="flex: 1;">
+                                        <i class="fas fa-columns"></i> Vergleichen
+                                    </button>
+                                    <button class="btn-link" onclick="repeatAnalysis('${item.ticker}', '${item.date}')" style="flex: 1;">
+                                        <i class="fas fa-redo"></i> Wiederholen
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
                     
                     return `
-                        <div class="history-item">
-                            <div class="history-item-header">
-                                <div>
-                                    <strong>${item.ticker}</strong>
-                                    <span class="decision-badge ${decisionClass}">${item.decision}</span>
-                                </div>
-                                <button class="btn-icon-small" onclick="deleteHistoryItem('${item.id}')">
-                                    <i class="fas fa-trash"></i>
-                                </button>
+                        <div class="ticker-group">
+                            <div class="ticker-group-header">
+                                <strong>${ticker}</strong>
+                                <span class="ticker-count">${items.length} Analyse${items.length > 1 ? 'n' : ''}</span>
                             </div>
-                            <div class="history-item-details">
-                                <small>
-                                    📅 ${formattedDate} | 
-                                    ⏱️ ${durationMin}min | 
-                                    🤖 ${item.llm_provider} (${item.llm_model}) | 
-                                    📊 Tiefe: ${item.research_depth}
-                                </small>
-                            </div>
-                            <div style="display: flex; gap: 8px; margin-top: 10px;">
-                                <button class="btn-link" onclick="loadHistoryAnalysis('${item.id}')" style="flex: 1;">
-                                    <i class="fas fa-eye"></i> Details
-                                </button>
-                                <button class="btn-link" onclick="addToCompare('${item.id}')" style="flex: 1;">
-                                    <i class="fas fa-columns"></i> Vergleichen
-                                </button>
-                                <button class="btn-link" onclick="repeatAnalysis('${item.ticker}', '${item.date}')" style="flex: 1;">
-                                    <i class="fas fa-redo"></i> Wiederholen
-                                </button>
+                            <div class="ticker-group-items">
+                                ${itemsHtml}
                             </div>
                         </div>
                     `;
