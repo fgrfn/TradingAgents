@@ -1812,9 +1812,12 @@
             }
             
             // Export analysis as HTML
-            function exportAnalysis() {
+            function exportAnalysis(event) {
                 const analysisBody = document.getElementById('analysisBody');
-                if (!analysisBody) return;
+                if (!analysisBody) {
+                    console.error('❌ Analysis Body nicht gefunden');
+                    return;
+                }
                 
                 const ticker = document.getElementById('ticker').value || 'UNKNOWN';
                 const date = new Date().toISOString().split('T')[0];
@@ -1853,49 +1856,99 @@
             }
             
             // Copy analysis to clipboard
-            async function copyAnalysis() {
+            async function copyAnalysis(event) {
                 const analysisBody = document.getElementById('analysisBody');
-                if (!analysisBody) return;
+                if (!analysisBody) {
+                    console.error('❌ Analysis Body nicht gefunden');
+                    return;
+                }
                 
                 try {
                     const text = analysisBody.innerText;
-                    await navigator.clipboard.writeText(text);
+                    
+                    // Try modern clipboard API first
+                    if (navigator.clipboard && window.isSecureContext) {
+                        await navigator.clipboard.writeText(text);
+                    } else {
+                        // Fallback for older browsers or non-secure contexts
+                        const textArea = document.createElement('textarea');
+                        textArea.value = text;
+                        textArea.style.position = 'fixed';
+                        textArea.style.left = '-999999px';
+                        textArea.style.top = '-999999px';
+                        document.body.appendChild(textArea);
+                        textArea.focus();
+                        textArea.select();
+                        
+                        try {
+                            document.execCommand('copy');
+                        } finally {
+                            textArea.remove();
+                        }
+                    }
                     
                     // Visual feedback
-                    const btn = event.target.closest('.btn-copy');
-                    const originalText = btn.innerHTML;
-                    btn.innerHTML = '<i class="fas fa-check"></i> Kopiert!';
-                    btn.style.background = '#10b981';
-                    btn.style.color = 'white';
+                    const btn = event ? event.target.closest('.btn-copy') : document.getElementById('copyBtn');
+                    if (btn) {
+                        const originalHTML = btn.innerHTML;
+                        btn.innerHTML = '<i class="fas fa-check"></i> Kopiert!';
+                        btn.style.background = '#10b981';
+                        btn.style.color = 'white';
+                        btn.style.border = '1px solid #10b981';
+                        
+                        setTimeout(() => {
+                            btn.innerHTML = originalHTML;
+                            btn.style.background = '';
+                            btn.style.color = '';
+                            btn.style.border = '';
+                        }, 2000);
+                    }
                     
-                    setTimeout(() => {
-                        btn.innerHTML = originalText;
-                        btn.style.background = '';
-                        btn.style.color = '';
-                    }, 2000);
-                    
-                    console.log('✅ Analyse in Zwischenablage kopiert');
+                    console.log('✅ Analyse in Zwischenablage kopiert (' + text.length + ' Zeichen)');
                 } catch (err) {
                     console.error('❌ Fehler beim Kopieren:', err);
-                    alert('Fehler beim Kopieren in die Zwischenablage');
+                    
+                    // Show user-friendly error
+                    const errorMsg = 'Fehler beim Kopieren. Bitte Text manuell markieren und kopieren (Strg+C).';
+                    
+                    // Try to show in button
+                    const btn = event ? event.target.closest('.btn-copy') : document.getElementById('copyBtn');
+                    if (btn) {
+                        const originalHTML = btn.innerHTML;
+                        btn.innerHTML = '<i class="fas fa-times"></i> Fehler';
+                        btn.style.background = '#ef4444';
+                        btn.style.color = 'white';
+                        
+                        setTimeout(() => {
+                            btn.innerHTML = originalHTML;
+                            btn.style.background = '';
+                            btn.style.color = '';
+                        }, 3000);
+                    }
+                    
+                    alert(errorMsg);
                 }
             }
             
             // Print analysis
-            function printAnalysis() {
+            function printAnalysis(event) {
                 window.print();
                 console.log('🖨️ Druckvorschau geöffnet');
             }
             
             // Toggle dark mode
-            function toggleDarkMode() {
+            function toggleDarkMode(event) {
                 document.body.classList.toggle('dark-mode');
                 const isDark = document.body.classList.contains('dark-mode');
                 localStorage.setItem('darkMode', isDark);
                 
-                const btn = event.target.closest('.btn-dark-mode');
-                const icon = btn.querySelector('i');
-                icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+                const btn = event ? event.target.closest('.btn-dark-mode') : document.getElementById('darkModeBtn');
+                if (btn) {
+                    const icon = btn.querySelector('i');
+                    if (icon) {
+                        icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+                    }
+                }
                 
                 console.log(`🌓 Dark Mode: ${isDark ? 'aktiviert' : 'deaktiviert'}`);
             }
