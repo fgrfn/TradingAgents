@@ -1581,19 +1581,6 @@
                 console.log('✓ Datum gesetzt');
             }
 
-            // Load saved configuration and form data
-            console.log('📥 Lade gespeicherte Konfiguration...');
-            loadSavedConfig();
-            loadFormData();
-
-            // Load providers on page load
-            console.log('🔌 Lade LLM Provider...');
-            loadProviders();
-            
-            // Attach auto-save listeners
-            console.log('🔗 Richte Auto-Save ein...');
-            attachAutoSaveListeners();
-
             // Depth slider update
             depthSlider.addEventListener('input', function() {
                 depthValue.textContent = this.value;
@@ -3207,6 +3194,16 @@
                         historyData = data.history;
                         updateFilterCounts();
                         displayHistory(historyData);
+                        
+                        // Setup search listener after data is loaded
+                        const searchInput = document.getElementById('historySearch');
+                        if (searchInput && !searchInput.dataset.listenerAdded) {
+                            searchInput.addEventListener('input', function() {
+                                const searchTerm = this.value.toLowerCase();
+                                filterAndDisplayHistory(searchTerm, currentFilter);
+                            });
+                            searchInput.dataset.listenerAdded = 'true';
+                        }
                     } else {
                         historyList.innerHTML = `
                             <div class="empty-state">
@@ -3253,12 +3250,6 @@
                 
                 filterAndDisplayHistory(searchTerm, filter);
             };
-            
-            // History Search
-            document.getElementById('historySearch')?.addEventListener('input', function() {
-                const searchTerm = this.value.toLowerCase();
-                filterAndDisplayHistory(searchTerm, currentFilter);
-            });
             
             function filterAndDisplayHistory(searchTerm, filter) {
                 let filtered = historyData;
@@ -3466,6 +3457,24 @@
                     historyModal.style.display = 'none';
                 }
             });
+
+            // Initialize application - MUST BE AT THE END after all functions are defined
+            console.log('🚀 Initialisiere Anwendung...');
+            
+            // Load saved configuration and form data
+            console.log('📥 Lade gespeicherte Konfiguration...');
+            loadSavedConfig();
+            loadFormData();
+
+            // Load providers on page load
+            console.log('🔌 Lade LLM Provider...');
+            loadProviders();
+            
+            // Attach auto-save listeners
+            console.log('🔗 Richte Auto-Save ein...');
+            attachAutoSaveListeners();
+
+            console.log('✅ Initialisierung abgeschlossen!');
         });
     </script>
 </body>
