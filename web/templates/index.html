@@ -3342,15 +3342,31 @@
             let compareIds = [];
             
             window.addToCompare = async function(analysisId) {
-                // Remove previous markings
-                document.querySelectorAll('.history-item').forEach(item => {
-                    item.classList.remove('compare-selected');
-                });
+                // Check if already selected - if yes, deselect it
+                const index = compareIds.indexOf(analysisId);
+                if (index > -1) {
+                    // Remove from selection
+                    compareIds.splice(index, 1);
+                    compareItems.splice(index, 1);
+                    
+                    // Update UI
+                    const item = document.getElementById(`history-item-${analysisId}`);
+                    if (item) {
+                        item.classList.remove('compare-selected');
+                    }
+                    
+                    if (compareIds.length === 0) {
+                        showToast('Auswahl zurückgesetzt', 'info', 2000);
+                    } else {
+                        showToast(`Analyse ${compareIds.length}/2 ausgewählt`, 'info', 2000);
+                    }
+                    return;
+                }
                 
+                // Check if limit reached
                 if (compareItems.length >= 2) {
-                    showToast('Maximal 2 Analysen können verglichen werden. Neue Auswahl gestartet.', 'warning');
-                    compareItems = [];
-                    compareIds = [];
+                    showToast('Maximal 2 Analysen können verglichen werden. Bitte eine Auswahl abwählen.', 'warning');
+                    return;
                 }
                 
                 try {
@@ -3361,13 +3377,11 @@
                         compareItems.push(data.result);
                         compareIds.push(analysisId);
                         
-                        // Mark selected items
-                        compareIds.forEach(id => {
-                            const item = document.getElementById(`history-item-${id}`);
-                            if (item) {
-                                item.classList.add('compare-selected');
-                            }
-                        });
+                        // Mark selected item
+                        const item = document.getElementById(`history-item-${analysisId}`);
+                        if (item) {
+                            item.classList.add('compare-selected');
+                        }
                         
                         showToast(`Analyse ${compareItems.length}/2 ausgewählt`, 'info', 2000);
                         
