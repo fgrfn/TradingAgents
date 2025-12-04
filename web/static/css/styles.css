@@ -156,6 +156,35 @@ body {
     font-weight: 600;
 }
 
+/* Collapsible Sections */
+.form-section.collapsible .collapsible-header {
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.3rem 0;
+    transition: color 0.2s ease;
+}
+
+.form-section.collapsible .collapsible-header:hover {
+    color: var(--primary-color);
+}
+
+.form-section.collapsible .toggle-icon {
+    font-size: 0.7rem;
+    transition: transform 0.3s ease;
+}
+
+.form-section.collapsible.collapsed .toggle-icon {
+    transform: rotate(-90deg);
+}
+
+.form-section.collapsible .collapsible-content {
+    overflow: hidden;
+    transition: max-height 0.3s ease, opacity 0.3s ease;
+}
+
 .form-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -673,6 +702,84 @@ input[type="range"]::-moz-range-thumb {
 
 .btn-link:hover {
     color: #1d4ed8;
+}
+
+/* Recent Tickers */
+.recent-tickers {
+    display: flex;
+    gap: 0.3rem;
+    flex-wrap: wrap;
+}
+
+.recent-ticker-btn {
+    padding: 0.3rem 0.6rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.recent-ticker-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+}
+
+/* Preset Buttons */
+.preset-btn {
+    flex: 1;
+    padding: 0.4rem 0.6rem;
+    background: var(--light-bg);
+    color: var(--text-primary);
+    border: 2px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+}
+
+.preset-btn:hover {
+    background: #e0f2fe;
+    border-color: var(--primary-color);
+    transform: translateY(-1px);
+}
+
+.preset-btn.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-color: #667eea;
+}
+
+.btn-icon-tiny {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0;
+    margin-left: 0.3rem;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+}
+
+.btn-icon-tiny:hover {
+    color: #f59e0b;
+    transform: scale(1.1);
+}
+
+.btn-icon-tiny.favorited {
+    color: #f59e0b;
+}
+
+.btn-icon-tiny.favorited i {
+    font-weight: 900;
 }
 
 /* Autocomplete Dropdown */

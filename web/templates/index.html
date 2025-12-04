@@ -1469,10 +1469,22 @@
                     <!-- Ticker & Datum -->
                     <div class="form-section">
                         <h3>Grunddaten</h3>
+                        
+                        <!-- Recent Tickers -->
+                        <div id="recentTickersContainer" style="display: none; margin-bottom: 0.8rem;">
+                            <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.3rem;">
+                                <i class="fas fa-history"></i> Zuletzt verwendet:
+                            </div>
+                            <div id="recentTickers" class="recent-tickers"></div>
+                        </div>
+                        
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="ticker">
                                     <i class="fas fa-tag"></i> Ticker-Symbol
+                                    <button type="button" class="btn-icon-tiny" id="favoriteTickerBtn" title="Zu Favoriten hinzufügen" style="display: none;">
+                                        <i class="far fa-star"></i>
+                                    </button>
                                 </label>
                                 <div class="input-wrapper">
                                     <input type="text" id="ticker" name="ticker" placeholder="z.B. AAPL, Apple, Microsoft..." required autocomplete="off">
@@ -1516,6 +1528,25 @@
                     <!-- Recherchetiefe -->
                     <div class="form-section">
                         <h3>Recherchetiefe</h3>
+                        
+                        <!-- Quick Presets -->
+                        <div style="margin-bottom: 0.8rem;">
+                            <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.4rem;">
+                                <i class="fas fa-bolt"></i> Schnellwahl:
+                            </div>
+                            <div style="display: flex; gap: 0.3rem;">
+                                <button type="button" class="preset-btn" onclick="applyPreset('quick')">
+                                    <i class="fas fa-bolt"></i> Quick Scan
+                                </button>
+                                <button type="button" class="preset-btn" onclick="applyPreset('balanced')">
+                                    <i class="fas fa-balance-scale"></i> Balanced
+                                </button>
+                                <button type="button" class="preset-btn" onclick="applyPreset('deep')">
+                                    <i class="fas fa-microscope"></i> Deep Dive
+                                </button>
+                            </div>
+                        </div>
+                        
                         <div class="form-group">
                             <label for="depth">
                                 <i class="fas fa-layer-group"></i> 
@@ -1538,8 +1569,11 @@
                     <hr style="margin: 2rem 0; border: none; border-top: 1px solid #e2e8f0;">
 
                     <!-- LLM Provider -->
-                    <div class="form-section">
-                        <h3>KI-Modell Konfiguration</h3>
+                    <div class="form-section collapsible">
+                        <h3 class="collapsible-header" onclick="toggleSection(this)">
+                            <i class="fas fa-chevron-down toggle-icon"></i> KI-Modell Konfiguration
+                        </h3>
+                        <div class="collapsible-content">
                         <div class="form-group">
                             <label for="provider">
                                 <i class="fas fa-server"></i> LLM Provider
@@ -1567,11 +1601,15 @@
                                 </select>
                             </div>
                         </div>
+                        </div>
                     </div>
 
                     <!-- API Keys -->
-                    <div class="form-section">
-                        <h3>API-Schlüssel</h3>
+                    <div class="form-section collapsible">
+                        <h3 class="collapsible-header" onclick="toggleSection(this)">
+                            <i class="fas fa-chevron-down toggle-icon"></i> API-Schlüssel
+                        </h3>
+                        <div class="collapsible-content">
                         <div class="form-group">
                             <label for="openaiKey">
                                 <i class="fas fa-key"></i> OpenAI API Key
@@ -1600,11 +1638,15 @@
                             <input type="password" id="alphaVantageKey" name="alphaVantageKey" placeholder="Ihr Alpha Vantage Key" required>
                             <small class="hint-text">Für Fundamental- und Nachrichtendaten</small>
                         </div>
+                        </div>
                     </div>
 
                     <!-- Discord Integration (Optional) -->
-                    <div class="form-section">
-                        <h3>Discord Integration <span class="optional-badge">(Optional)</span></h3>
+                    <div class="form-section collapsible collapsed">
+                        <h3 class="collapsible-header" onclick="toggleSection(this)">
+                            <i class="fas fa-chevron-right toggle-icon"></i> Discord Integration <span class="optional-badge">(Optional)</span>
+                        </h3>
+                        <div class="collapsible-content" style="display: none;">
                         <div class="form-group">
                             <label for="discordWebhook">
                                 <i class="fab fa-discord"></i> Discord Webhook URL
@@ -1617,6 +1659,7 @@
                                 <input type="checkbox" id="discordNotify" name="discordNotify" checked>
                                 <span><i class="fas fa-bell"></i> Bei Abschluss benachrichtigen</span>
                             </label>
+                        </div>
                         </div>
                     </div>
                 </form>
@@ -1990,6 +2033,9 @@
                     showToast('Mindestens ein Analyst muss ausgewählt werden', 'warning');
                     return;
                 }
+                
+                // Add ticker to recent tickers
+                addRecentTicker(ticker);
 
                 // Prepare request
                 const requestData = {
@@ -4023,6 +4069,143 @@
 
             console.log('✅ Initialisierung abgeschlossen!');
         });
+        
+        // Recent Tickers Management
+        function loadRecentTickers() {
+            const recent = JSON.parse(localStorage.getItem('recentTickers') || '[]');
+            const container = document.getElementById('recentTickersContainer');
+            const tickersDiv = document.getElementById('recentTickers');
+            
+            if (recent.length > 0) {
+                container.style.display = 'block';
+                tickersDiv.innerHTML = recent.slice(0, 5).map(ticker => 
+                    `<button type="button" class="recent-ticker-btn" onclick="selectRecentTicker('${ticker}')">${ticker}</button>`
+                ).join('');
+            } else {
+                container.style.display = 'none';
+            }
+        }
+        
+        function addRecentTicker(ticker) {
+            let recent = JSON.parse(localStorage.getItem('recentTickers') || '[]');
+            // Remove if already exists
+            recent = recent.filter(t => t !== ticker);
+            // Add to front
+            recent.unshift(ticker);
+            // Keep only last 10
+            recent = recent.slice(0, 10);
+            localStorage.setItem('recentTickers', JSON.stringify(recent));
+            loadRecentTickers();
+        }
+        
+        function selectRecentTicker(ticker) {
+            document.getElementById('ticker').value = ticker;
+            // Trigger autocomplete to show details
+            const event = new Event('input', { bubbles: true });
+            document.getElementById('ticker').dispatchEvent(event);
+        }
+        
+        // Favorite Ticker Button
+        const favoriteBtn = document.getElementById('favoriteTickerBtn');
+        const tickerInputForFav = document.getElementById('ticker');
+        
+        if (favoriteBtn && tickerInputForFav) {
+            tickerInputForFav.addEventListener('input', function() {
+                if (this.value.trim()) {
+                    favoriteBtn.style.display = 'inline-block';
+                } else {
+                    favoriteBtn.style.display = 'none';
+                }
+            });
+            
+            favoriteBtn.addEventListener('click', function() {
+                const ticker = tickerInputForFav.value.trim().toUpperCase();
+                if (ticker) {
+                    let favorites = JSON.parse(localStorage.getItem('favoriteTickers') || '[]');
+                    const isFavorited = favorites.includes(ticker);
+                    
+                    if (isFavorited) {
+                        favorites = favorites.filter(t => t !== ticker);
+                        this.innerHTML = '<i class="far fa-star"></i>';
+                        this.classList.remove('favorited');
+                    } else {
+                        favorites.push(ticker);
+                        this.innerHTML = '<i class="fas fa-star"></i>';
+                        this.classList.add('favorited');
+                    }
+                    
+                    localStorage.setItem('favoriteTickers', JSON.stringify(favorites));
+                }
+            });
+        }
+        
+        // Load recent tickers on page load
+        loadRecentTickers();
+        
+        // Preset Configurations
+        function applyPreset(presetName) {
+            const presets = {
+                'quick': {
+                    depth: 1,
+                    analysts: ['market'],
+                    name: 'Quick Scan'
+                },
+                'balanced': {
+                    depth: 3,
+                    analysts: ['market', 'news', 'fundamentals'],
+                    name: 'Balanced'
+                },
+                'deep': {
+                    depth: 5,
+                    analysts: ['market', 'news', 'fundamentals', 'social'],
+                    name: 'Deep Dive'
+                }
+            };
+            
+            const preset = presets[presetName];
+            if (!preset) return;
+            
+            // Set depth
+            const depthSlider = document.getElementById('depth');
+            const depthValue = document.getElementById('depthValue');
+            if (depthSlider && depthValue) {
+                depthSlider.value = preset.depth;
+                depthValue.textContent = preset.depth;
+            }
+            
+            // Set analysts
+            document.querySelectorAll('input[name="analysts"]').forEach(checkbox => {
+                checkbox.checked = preset.analysts.includes(checkbox.value);
+            });
+            
+            // Visual feedback
+            document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.closest('.preset-btn').classList.add('active');
+            
+            showToast(`Vorlage "${preset.name}" angewendet`, 'success', 2000);
+            console.log(`🎯 Preset "${preset.name}" aktiviert`);
+        }
+        
+        // Collapsible Sections Toggle
+        function toggleSection(header) {
+            const section = header.closest('.form-section');
+            const content = section.querySelector('.collapsible-content');
+            const icon = header.querySelector('.toggle-icon');
+            
+            if (section.classList.contains('collapsed')) {
+                // Expand
+                section.classList.remove('collapsed');
+                content.style.display = 'block';
+                icon.classList.remove('fa-chevron-right');
+                icon.classList.add('fa-chevron-down');
+            } else {
+                // Collapse
+                section.classList.add('collapsed');
+                content.style.display = 'none';
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-right');
+            }
+        }
     </script>
 </body>
 </html>
