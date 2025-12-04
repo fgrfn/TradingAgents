@@ -1474,8 +1474,9 @@
                                     <i class="fas fa-tag"></i> Ticker-Symbol
                                 </label>
                                 <div class="input-wrapper">
-                                    <input type="text" id="ticker" name="ticker" placeholder="z.B. AAPL" required>
+                                    <input type="text" id="ticker" name="ticker" placeholder="z.B. AAPL, Apple, Microsoft..." required autocomplete="off">
                                     <span class="input-status" id="tickerStatus"></span>
+                                    <div class="ticker-autocomplete" id="tickerAutocomplete"></div>
                                 </div>
                                 <div class="preview-info" id="tickerPreview"></div>
                             </div>
@@ -2639,32 +2640,201 @@
                 document.body.classList.add('dark-mode');
             }
             
-            // Live Preview - Ticker Validation
-            let tickerValidationTimeout;
+            // Ticker Autocomplete
+            let autocompleteTimeout;
+            let selectedIndex = -1;
             const tickerInput = document.getElementById('ticker');
             const tickerStatus = document.getElementById('tickerStatus');
             const tickerPreview = document.getElementById('tickerPreview');
+            const autocompleteDropdown = document.getElementById('tickerAutocomplete');
             
-            if (tickerInput) {
-                tickerInput.addEventListener('input', function() {
-                    const ticker = this.value.trim().toUpperCase();
+            // Ticker Autocomplete Functionality
+            if (tickerInput && autocompleteDropdown) {
+                tickerInput.addEventListener('input', async function() {
+                    const query = this.value.trim();
+                    selectedIndex = -1;
                     
-                    if (!ticker) {
+                    if (!query) {
+                        autocompleteDropdown.classList.remove('show');
+                        autocompleteDropdown.innerHTML = '';
                         tickerStatus.innerHTML = '';
                         tickerPreview.classList.remove('show');
                         return;
                     }
                     
-                    // Show validating state
+                    // Show loading state
                     tickerStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
                     tickerStatus.className = 'input-status validating';
                     
-                    // Debounce validation
-                    clearTimeout(tickerValidationTimeout);
-                    tickerValidationTimeout = setTimeout(() => {
-                        validateTicker(ticker);
-                    }, 500);
+                    // Debounce API call
+                    clearTimeout(autocompleteTimeout);
+                    autocompleteTimeout = setTimeout(async () => {
+                        await searchTicker(query);
+                    }, 300);
                 });
+                
+                // Keyboard navigation
+                tickerInput.addEventListener('keydown', function(e) {
+                    const items = autocompleteDropdown.querySelectorAll('.autocomplete-item');
+                    
+                    if (!items.length) return;
+                    
+                    if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+                        updateSelection(items);
+                    } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        selectedIndex = Math.max(selectedIndex - 1, -1);
+                        updateSelection(items);
+                    } else if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (selectedIndex >= 0 && items[selectedIndex]) {
+                            selectTicker(
+                                items[selectedIndex].dataset.symbol,
+                                items[selectedIndex].dataset.name
+                            );
+                        }
+                    } else if (e.key === 'Escape') {
+                        autocompleteDropdown.classList.remove('show');
+                        selectedIndex = -1;
+                    }
+                });
+                
+                // Click outside to close
+                document.addEventListener('click', function(e) {
+                    if (!tickerInput.contains(e.target) && !autocompleteDropdown.contains(e.target)) {
+                        autocompleteDropdown.classList.remove('show');
+                        selectedIndex = -1;
+                    }
+                });
+            }
+            
+            async function searchTicker(query) {
+                try {
+                    const response = await fetch(`/api/search/ticker?q=${encodeURIComponent(query)}&limit=8`);
+                    const data = await response.json();
+                    
+                    if (!data.success || !data.results || data.results.length === 0) {
+                        autocompleteDropdown.innerHTML = '<div class="autocomplete-no-results">Keine Treffer gefunden</div>';
+                        autocompleteDropdown.classList.add('show');
+                        tickerStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i>';
+                        tickerStatus.className = 'input-status invalid';
+                        return;
+                    }
+                    
+                    // Build dropdown HTML
+                    let html = '';
+                    data.results.forEach((item, index) => {
+                        html += `
+                            <div class="autocomplete-item ${index === 0 ? 'active' : ''}" 
+                                 data-symbol="${item.symbol}" 
+                                 data-name="${item.name}"
+                                 onclick="selectTicker('${item.symbol}', '${item.name}')">
+                                <div class="autocomplete-symbol">${item.symbol}</div>
+                                <div class="autocomplete-name">${item.name}</div>
+                            </div>
+                        `;
+                    });
+                    
+                    autocompleteDropdown.innerHTML = html;
+                    autocompleteDropdown.classList.add('show');
+                    selectedIndex = 0;
+                    
+                    tickerStatus.innerHTML = '<i class="fas fa-search"></i>';
+                    tickerStatus.className = 'input-status validating';
+                    
+                    console.log(`🔍 ${data.results.length} Treffer für "${query}"`);
+                    
+                } catch (error) {
+                    console.error('Ticker search error:', error);
+                    autocompleteDropdown.innerHTML = '<div class="autocomplete-no-results">Fehler bei der Suche</div>';
+                    autocompleteDropdown.classList.add('show');
+                    tickerStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i>';
+                    tickerStatus.className = 'input-status invalid';
+                }
+            }
+            
+            function updateSelection(items) {
+                items.forEach((item, index) => {
+                    if (index === selectedIndex) {
+                        item.classList.add('active');
+                        item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                    } else {
+                        item.classList.remove('active');
+                    }
+                });
+            }
+            
+            // Make selectTicker globally accessible for onclick handlers
+            window.selectTicker = function(symbol, name) {
+                const tickerInput = document.getElementById('ticker');
+                const autocompleteDropdown = document.getElementById('tickerAutocomplete');
+                const tickerStatus = document.getElementById('tickerStatus');
+                const tickerPreview = document.getElementById('tickerPreview');
+                
+                tickerInput.value = symbol;
+                autocompleteDropdown.classList.remove('show');
+                autocompleteDropdown.innerHTML = '';
+                selectedIndex = -1;
+                
+                // Show success status
+                tickerStatus.innerHTML = '<i class="fas fa-check-circle"></i>';
+                tickerStatus.className = 'input-status valid';
+                
+                // Update preview with selected ticker info
+                const depth = parseInt(document.getElementById('depth').value) || 3;
+                const analysts = document.querySelectorAll('input[name="analysts"]:checked').length;
+                const estimatedMinutes = Math.ceil((depth * analysts * 0.5) + 1);
+                
+                tickerPreview.innerHTML = `
+                    <div class="info-item">
+                        <span class="info-icon">✅</span>
+                        <span><strong>${symbol}</strong> - ${name}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-icon">⏱️</span>
+                        <span>Geschätzte Dauer: <strong>~${estimatedMinutes} Min.</strong></span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-icon">👥</span>
+                        <span>Analysten: <strong>${analysts}</strong> | Tiefe: <strong>${depth}</strong></span>
+                    </div>
+                `;
+                tickerPreview.classList.add('show');
+                
+                console.log(`✅ Ticker ausgewählt: ${symbol} (${name})`);
+            }
+            
+            // Live Preview - Ticker Validation (simplified now)
+            let tickerValidationTimeout;
+            
+            async function validateTicker(ticker) {
+                try {
+                    // Calculate estimated analysis time
+                    const depth = parseInt(document.getElementById('depth').value) || 3;
+                    const analysts = document.querySelectorAll('input[name="analysts"]:checked').length;
+                    const estimatedMinutes = Math.ceil((depth * analysts * 0.5) + 1);
+                    
+                    tickerPreview.innerHTML = `
+                        <div class="info-item">
+                            <span class="info-icon">✅</span>
+                            <span>Symbol: <strong>${ticker}</strong></span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-icon">⏱️</span>
+                            <span>Geschätzte Dauer: <strong>~${estimatedMinutes} Min.</strong></span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-icon">👥</span>
+                            <span>Analysten: <strong>${analysts}</strong> | Tiefe: <strong>${depth}</strong></span>
+                        </div>
+                    `;
+                    tickerPreview.classList.add('show');
+                    
+                } catch (error) {
+                    console.error('Ticker validation error:', error);
+                }
             }
             
             async function validateTicker(ticker) {

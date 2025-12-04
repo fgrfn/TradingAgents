@@ -931,6 +931,27 @@ async def clear_all_history():
         return {"success": False, "error": str(e)}
 
 
+@app.get("/api/search/ticker")
+async def search_ticker(q: str = "", limit: int = 10):
+    """
+    Search for ticker symbols by symbol or company name
+    
+    Args:
+        q: Search query (symbol or company name)
+        limit: Maximum number of results (default: 10)
+    
+    Returns:
+        List of matching ticker symbols with their names
+    """
+    try:
+        from stock_symbols import search_symbols
+        results = search_symbols(q, limit)
+        return {"success": True, "results": results}
+    except Exception as e:
+        print(f"Error searching ticker: {e}")
+        return {"success": False, "error": str(e), "results": []}
+
+
 @app.get("/api/health")
 async def health_check():
     """Health check endpoint"""
