@@ -1620,14 +1620,6 @@
                     <div class="form-section">
                         <h3>Grunddaten</h3>
                         
-                        <!-- Recent Tickers -->
-                        <div id="recentTickersContainer" style="display: none; margin-bottom: 0.8rem;">
-                            <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.3rem;">
-                                <i class="fas fa-history"></i> Zuletzt verwendet:
-                            </div>
-                            <div id="recentTickers" class="recent-tickers"></div>
-                        </div>
-                        
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="ticker">
@@ -1645,6 +1637,14 @@
                                     <div class="ticker-autocomplete" id="tickerAutocomplete"></div>
                                 </div>
                                 <div class="preview-info" id="tickerPreview"></div>
+                                
+                                <!-- Recent Tickers -->
+                                <div id="recentTickersContainer" style="display: none; margin-top: 0.8rem;">
+                                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.3rem;">
+                                        <i class="fas fa-history"></i> Zuletzt verwendet:
+                                    </div>
+                                    <div id="recentTickers" class="recent-tickers"></div>
+                                </div>
                             </div>
                             <div class="form-group">
                                 <label for="date">
@@ -1854,7 +1854,44 @@
                         
                         <!-- Mini Chart -->
                         <div class="live-price-chart">
+                            <div style="font-size: 0.75rem; margin-bottom: 0.3rem; opacity: 0.9;">📈 Preis & Moving Averages</div>
                             <canvas id="livePriceChart" width="400" height="100"></canvas>
+                        </div>
+                        
+                        <!-- RSI Indicator -->
+                        <div class="live-indicator">
+                            <div class="indicator-header">
+                                <span>📊 RSI (14)</span>
+                                <span id="rsiValue" class="indicator-value">-</span>
+                            </div>
+                            <div class="rsi-bar">
+                                <div class="rsi-zone oversold">0</div>
+                                <div class="rsi-fill" id="rsiFill" style="width: 50%"></div>
+                                <div class="rsi-zone overbought">100</div>
+                            </div>
+                            <div class="rsi-labels">
+                                <span class="rsi-label">Überverkauft</span>
+                                <span class="rsi-label">Neutral</span>
+                                <span class="rsi-label">Überkauft</span>
+                            </div>
+                        </div>
+                        
+                        <!-- MA Legend -->
+                        <div class="ma-legend">
+                            <span class="ma-legend-item">
+                                <span class="ma-color" style="background: rgba(251, 191, 36, 0.7);"></span>
+                                50-Tage MA
+                            </span>
+                            <span class="ma-legend-item">
+                                <span class="ma-color" style="background: rgba(239, 68, 68, 0.7);"></span>
+                                200-Tage MA
+                            </span>
+                        </div>
+                        
+                        <!-- Trading Signals -->
+                        <div class="trading-signals" id="tradingSignals">
+                            <div class="signal-header">💡 Signale:</div>
+                            <div id="signalsList"></div>
                         </div>
                         
                         <div class="live-price-chart-controls">
@@ -5266,6 +5303,91 @@
             liveChartData = null;
         }
         
+        // Calculate RSI (Relative Strength Index)
+        function calculateRSI(prices, period = 14) {
+            if (prices.length < period + 1) return null;
+            
+            let gains = 0;
+            let losses = 0;
+            
+            // Calculate initial average gain/loss
+            for (let i = 1; i <= period; i++) {
+                const change = prices[i] - prices[i - 1];
+                if (change > 0) gains += change;
+                else losses -= change;
+            }
+            
+            let avgGain = gains / period;
+            let avgLoss = losses / period;
+            
+            // Calculate smoothed averages for remaining data
+            for (let i = period + 1; i < prices.length; i++) {
+                const change = prices[i] - prices[i - 1];
+                const gain = change > 0 ? change : 0;
+                const loss = change < 0 ? -change : 0;
+                
+                avgGain = (avgGain * (period - 1) + gain) / period;
+                avgLoss = (avgLoss * (period - 1) + loss) / period;
+            }
+            
+            if (avgLoss === 0) return 100;
+            const rs = avgGain / avgLoss;
+            return 100 - (100 / (1 + rs));
+        }
+        
+        // Calculate Moving Average
+        function calculateMA(prices, period) {
+            if (prices.length < period) return null;
+            
+            const ma = [];
+            for (let i = period - 1; i < prices.length; i++) {
+                let sum = 0;
+                for (let j = 0; j < period; j++) {
+                    sum += prices[i - j];
+                }
+                ma.push(sum / period);
+            }
+            return ma;
+        }
+        
+        // Detect trading signals
+        function detectSignals(prices, ma50, ma200, rsi) {
+            const signals = [];
+            
+            // RSI signals
+            if (rsi !== null) {
+                if (rsi > 70) {
+                    signals.push({ type: 'bearish', text: `RSI überkauft (${rsi.toFixed(1)})` });
+                } else if (rsi < 30) {
+                    signals.push({ type: 'bullish', text: `RSI überverkauft (${rsi.toFixed(1)})` });
+                } else {
+                    signals.push({ type: 'neutral', text: `RSI neutral (${rsi.toFixed(1)})` });
+                }
+            }
+            
+            // Moving average crossover signals
+            if (ma50 && ma200 && ma50.length > 0 && ma200.length > 0) {
+                const current50 = ma50[ma50.length - 1];
+                const current200 = ma200[ma200.length - 1];
+                const currentPrice = prices[prices.length - 1];
+                
+                if (current50 > current200) {
+                    signals.push({ type: 'bullish', text: '50-MA über 200-MA (Golden Cross)' });
+                } else if (current50 < current200) {
+                    signals.push({ type: 'bearish', text: '50-MA unter 200-MA (Death Cross)' });
+                }
+                
+                // Price vs MA signals
+                if (currentPrice > current50) {
+                    signals.push({ type: 'bullish', text: 'Preis über 50-Tage MA' });
+                } else {
+                    signals.push({ type: 'bearish', text: 'Preis unter 50-Tage MA' });
+                }
+            }
+            
+            return signals;
+        }
+        
         function renderLiveChart(data) {
             const canvas = document.getElementById('livePriceChart');
             if (!canvas) return;
@@ -5280,11 +5402,70 @@
             if (!data || !data.prices || data.prices.length === 0) return;
             
             const prices = data.prices;
+            
+            // Calculate technical indicators
+            const rsi = calculateRSI(prices);
+            const ma50 = calculateMA(prices, 50);
+            const ma200 = calculateMA(prices, 200);
+            
+            // Update RSI display
+            if (rsi !== null) {
+                document.getElementById('rsiValue').textContent = rsi.toFixed(1);
+                const rsiFill = document.getElementById('rsiFill');
+                if (rsiFill) {
+                    rsiFill.style.width = rsi + '%';
+                }
+            }
+            
+            // Generate and display trading signals
+            const signals = detectSignals(prices, ma50, ma200, rsi);
+            const signalsList = document.getElementById('signalsList');
+            if (signalsList) {
+                signalsList.innerHTML = signals.map(signal => {
+                    const icon = signal.type === 'bullish' ? '📈' : 
+                                 signal.type === 'bearish' ? '📉' : '➡️';
+                    return `<div class="signal-item">
+                        <span class="signal-icon ${signal.type}">${icon}</span>
+                        <span>${signal.text}</span>
+                    </div>`;
+                }).join('');
+            }
+            
             const minPrice = Math.min(...prices);
             const maxPrice = Math.max(...prices);
             const priceRange = maxPrice - minPrice || 1;
             
-            // Draw line chart
+            // Helper function to draw a line on canvas
+            const drawLine = (dataPoints, color, lineWidth, startIndex = 0) => {
+                ctx.strokeStyle = color;
+                ctx.lineWidth = lineWidth;
+                ctx.beginPath();
+                
+                dataPoints.forEach((value, index) => {
+                    const x = ((startIndex + index) / (prices.length - 1)) * width;
+                    const y = height - ((value - minPrice) / priceRange) * height;
+                    
+                    if (index === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                });
+                
+                ctx.stroke();
+            };
+            
+            // Draw MA200 (red)
+            if (ma200 && ma200.length > 0) {
+                drawLine(ma200, 'rgba(239, 68, 68, 0.7)', 1.5, prices.length - ma200.length);
+            }
+            
+            // Draw MA50 (yellow)
+            if (ma50 && ma50.length > 0) {
+                drawLine(ma50, 'rgba(251, 191, 36, 0.7)', 1.5, prices.length - ma50.length);
+            }
+            
+            // Draw main price line
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
             ctx.lineWidth = 2;
             ctx.beginPath();

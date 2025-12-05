@@ -899,6 +899,143 @@ input[type="range"]::-moz-range-thumb {
     height: 100px !important;
 }
 
+/* Technical Indicators */
+.live-indicator {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 0.8rem;
+    margin-top: 0.8rem;
+}
+
+.indicator-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+}
+
+/* MA Legend */
+.ma-legend {
+    display: flex;
+    gap: 1rem;
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
+    opacity: 0.8;
+}
+
+.ma-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.ma-color {
+    width: 16px;
+    height: 3px;
+    border-radius: 2px;
+    display: inline-block;
+}
+
+.indicator-value {
+    font-weight: 700;
+    font-size: 1rem;
+}
+
+.rsi-bar {
+    position: relative;
+    height: 24px;
+    background: linear-gradient(90deg, #ef4444 0%, #fbbf24 50%, #10b981 100%);
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 0.5rem;
+}
+
+.rsi-zone {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: rgba(0, 0, 0, 0.6);
+    z-index: 2;
+}
+
+.rsi-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.3);
+    border-right: 3px solid white;
+    transition: width 0.3s ease;
+}
+
+.rsi-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.65rem;
+    margin-top: 0.3rem;
+    opacity: 0.8;
+}
+
+.rsi-label {
+    flex: 1;
+    text-align: center;
+}
+
+.rsi-label:first-child {
+    text-align: left;
+}
+
+.rsi-label:last-child {
+    text-align: right;
+}
+
+/* Trading Signals */
+.trading-signals {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 0.8rem;
+    margin-top: 0.8rem;
+}
+
+.signal-header {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+#signalsList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.signal-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    padding: 0.3rem 0;
+}
+
+.signal-icon {
+    font-size: 1rem;
+}
+
+.signal-icon.bullish {
+    color: #10b981;
+}
+
+.signal-icon.bearish {
+    color: #ef4444;
+}
+
+.signal-icon.neutral {
+    color: #fbbf24;
+}
+
 .live-price-chart-controls {
     display: flex;
     gap: 0.5rem;
