@@ -5870,24 +5870,43 @@
             // Display next earnings date
             if (data.earningsDate) {
                 const earningsDateEl = document.getElementById('nextEarningsDate');
-                const earningsTimeEl = document.getElementById('nextEarningsTime');
+                const countdown = document.getElementById('earningsCountdown');
                 
                 const date = new Date(data.earningsDate);
+                const today = new Date();
+                const daysUntil = Math.ceil((date - today) / (1000 * 60 * 60 * 24));
+                
                 if (earningsDateEl) earningsDateEl.textContent = date.toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' });
-                if (earningsTimeEl) earningsTimeEl.textContent = 'Nach Handelsschluss';
+                
+                // Update countdown
+                if (countdown && daysUntil > 0) {
+                    countdown.textContent = `in ${daysUntil} Tag${daysUntil !== 1 ? 'en' : ''}`;
+                    countdown.style.display = 'inline-block';
+                } else if (countdown) {
+                    countdown.style.display = 'none';
+                }
                 
                 // Show estimates if available
                 const estimateEl = document.getElementById('nextEarningsEstimate');
                 if (estimateEl && data.earningsAverage) {
-                    estimateEl.textContent = `EPS Schätzung: $${data.earningsAverage.toFixed(2)}`;
+                    estimateEl.textContent = `$${data.earningsAverage.toFixed(2)}`;
+                } else if (estimateEl) {
+                    estimateEl.textContent = 'N/A';
+                }
+                
+                // Show fiscal period if available
+                const fiscalEl = document.getElementById('nextEarningsFiscal');
+                if (fiscalEl) {
+                    fiscalEl.textContent = 'Q4 2025'; // Yahoo Finance doesn't provide this
                 }
             } else {
                 displayNoUpcomingEarnings();
             }
             
-            // Note: Yahoo Finance doesn't provide historical quarterly earnings in calendar
-            // Hide the historical earnings section
-            displayEarningsHistory(earnings.slice(0, 4));
+            // Yahoo Finance calendar doesn't provide historical quarterly earnings
+            // Hide the historical section
+            const historySection = document.querySelector('.earnings-history');
+            if (historySection) historySection.style.display = 'none';
         }
         
         function displayNextEarnings(earning) {
