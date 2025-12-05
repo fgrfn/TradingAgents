@@ -1974,20 +1974,19 @@
                             <h3><i class="fas fa-chart-line"></i> Kursverlauf</h3>
                         </div>
                         <div class="overview-chart-controls">
-                            <button class="overview-period-btn active" data-period="1" onclick="changeOverviewPeriod(1)">1T</button>
-                            <button class="overview-period-btn" data-period="5" onclick="changeOverviewPeriod(5)">5T</button>
+                            <button class="overview-period-btn active" data-period="5" onclick="changeOverviewPeriod(5)">5T</button>
                             <button class="overview-period-btn" data-period="30" onclick="changeOverviewPeriod(30)">1M</button>
                             <button class="overview-period-btn" data-period="90" onclick="changeOverviewPeriod(90)">3M</button>
                             <button class="overview-period-btn" data-period="180" onclick="changeOverviewPeriod(180)">6M</button>
                             <button class="overview-period-btn" data-period="365" onclick="changeOverviewPeriod(365)">1J</button>
                         </div>
                         <div class="overview-chart-container">
-                            <canvas id="overviewChart" width="800" height="300"></canvas>
+                            <canvas id="overviewChart" width="700" height="240"></canvas>
                         </div>
                         <div class="overview-chart-info">
                             <div class="chart-info-item">
                                 <span class="chart-info-label">Zeitraum:</span>
-                                <span id="overviewChartPeriod">1 Tag</span>
+                                <span id="overviewChartPeriod">5 Tage</span>
                             </div>
                             <div class="chart-info-item">
                                 <span class="chart-info-label">Datenpunkte:</span>
@@ -5339,7 +5338,7 @@
         
         // Ticker Overview Functions
         let currentOverviewTicker = null;
-        let currentOverviewPeriod = 1;
+        let currentOverviewPeriod = 5;
         let overviewChartData = null;
         
         // Cache Management
@@ -5684,7 +5683,7 @@
             const isPositive = priceChange >= 0;
             
             // Chart area with padding for labels
-            const padding = { left: 70, right: 20, top: 30, bottom: 40 };
+            const padding = { left: 60, right: 15, top: 20, bottom: 35 };
             const chartWidth = width - padding.left - padding.right;
             const chartHeight = height - padding.top - padding.bottom;
             
