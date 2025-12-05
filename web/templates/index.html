@@ -5869,12 +5869,20 @@
             
             // Display next earnings date
             if (data.earningsDate) {
-                const earningsDateEl = document.getElementById('nextEarningsDate');
-                const countdown = document.getElementById('earningsCountdown');
-                
                 const date = new Date(data.earningsDate);
                 const today = new Date();
+                today.setHours(0, 0, 0, 0); // Reset to start of day for accurate comparison
                 const daysUntil = Math.ceil((date - today) / (1000 * 60 * 60 * 24));
+                
+                // Check if earnings date is in the past
+                if (date < today) {
+                    console.log(`⚠️ Earnings-Termin liegt in der Vergangenheit (${data.earningsDate})`);
+                    displayNoUpcomingEarnings();
+                    return;
+                }
+                
+                const earningsDateEl = document.getElementById('nextEarningsDate');
+                const countdown = document.getElementById('earningsCountdown');
                 
                 if (earningsDateEl) earningsDateEl.textContent = date.toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' });
                 
