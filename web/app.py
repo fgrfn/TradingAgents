@@ -24,8 +24,22 @@ from tradingagents.graph.trading_graph import TradingAgentsGraph
 from tradingagents.default_config import DEFAULT_CONFIG
 from cli.models import AnalystType
 
-# App will be created after lifespan definition (see bottom of file)
-app = None
+# Create app temporarily - lifespan will be added later
+app = FastAPI(title="TradingAgents Web UI", version="1.0.0")
+
+# CORS Middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Statische Dateien
+static_path = Path(__file__).parent / "static"
+static_path.mkdir(exist_ok=True)
+app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
 
 
 class AnalysisRequest(BaseModel):
@@ -1275,22 +1289,8 @@ async def lifespan(app: FastAPI):
     scheduler.shutdown()
 
 
-# Create FastAPI app with lifespan
-app = FastAPI(title="TradingAgents Web UI", version="1.0.0", lifespan=lifespan)
-
-# CORS Middleware (need to add again after app creation)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Statische Dateien
-static_path = Path(__file__).parent / "static"
-static_path.mkdir(exist_ok=True)
-app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
+# Assign lifespan to existing app
+app.router.lifespan_context = lifespan
 
 
 @app.get("/api/health")
