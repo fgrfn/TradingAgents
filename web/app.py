@@ -13,6 +13,7 @@ import asyncio
 import json
 import sys
 import requests
+import pandas as pd
 from datetime import datetime, timezone
 from pathlib import Path
 from contextlib import asynccontextmanager
@@ -966,7 +967,7 @@ async def clear_all_history():
 @app.get("/api/search/ticker")
 async def search_ticker(q: str = "", limit: int = 10):
     """
-    Search for ticker symbols by symbol or company name using Yahoo Finance
+    Search for ticker symbols by symbol or company name
     
     Args:
         q: Search query (symbol or company name)
@@ -976,42 +977,32 @@ async def search_ticker(q: str = "", limit: int = 10):
         List of matching ticker symbols with their names
     """
     try:
-        import yfinance as yf
-        
         if not q or len(q) < 1:
             return {"success": True, "results": []}
         
-        # Use yfinance search
-        ticker = yf.Ticker(q.upper())
-        info = ticker.info
+        from stock_symbols import search_symbols
         
-        results = []
+        # Search in static list (searches both symbol and name)
+        results = search_symbols(q, limit)
         
-        # If ticker exists, add it as first result
-        if info and info.get('symbol'):
-            results.append({
-                "symbol": info.get('symbol', q.upper()),
-                "name": info.get('longName') or info.get('shortName', '')
-            })
+        # If exact match on symbol, verify with Yahoo Finance
+        if results and results[0]['symbol'].upper() == q.upper():
+            try:
+                import yfinance as yf
+                ticker = yf.Ticker(q.upper())
+                info = ticker.info
+                
+                # Update with live data if available
+                if info and info.get('symbol'):
+                    results[0]['name'] = info.get('longName') or info.get('shortName') or results[0]['name']
+            except:
+                pass  # Keep static data if Yahoo Finance fails
         
-        # Try to find similar tickers (fallback to stock_symbols for suggestions)
-        try:
-            from stock_symbols import search_symbols
-            extra_results = search_symbols(q, limit - len(results))
-            results.extend(extra_results)
-        except:
-            pass
+        return {"success": True, "results": results}
         
-        return {"success": True, "results": results[:limit]}
     except Exception as e:
-        # Fallback to static list if Yahoo Finance fails
-        try:
-            from stock_symbols import search_symbols
-            results = search_symbols(q, limit)
-            return {"success": True, "results": results}
-        except:
-            print(f"Error searching ticker: {e}")
-            return {"success": False, "error": str(e), "results": []}
+        print(f"Error searching ticker: {e}")
+        return {"success": False, "error": str(e), "results": []}
 
 
 # ========================================
@@ -1376,19 +1367,26 @@ async def get_ticker_history(symbol: str, period: str = "1y"):
         hist = ticker.history(period=yf_period)
         
         if hist.empty:
-            return {"error": "No data available"}
+            print(f"⚠️ No history data for {symbol} with period {yf_period}")
+            return {"error": "No data available", "symbol": symbol.upper(), "period": period, "data": []}
         
         # Convert to simple format
         data = []
         for date, row in hist.iterrows():
-            data.append({
-                "date": date.strftime("%Y-%m-%d"),
-                "open": round(row['Open'], 2),
-                "high": round(row['High'], 2),
-                "low": round(row['Low'], 2),
-                "close": round(row['Close'], 2),
-                "volume": int(row['Volume'])
-            })
+            try:
+                data.append({
+                    "date": date.strftime("%Y-%m-%d") if hasattr(date, 'strftime') else str(date).split(' ')[0],
+                    "open": round(float(row['Open']), 2) if not pd.isna(row['Open']) else 0,
+                    "high": round(float(row['High']), 2) if not pd.isna(row['High']) else 0,
+                    "low": round(float(row['Low']), 2) if not pd.isna(row['Low']) else 0,
+                    "close": round(float(row['Close']), 2) if not pd.isna(row['Close']) else 0,
+                    "volume": int(row['Volume']) if not pd.isna(row['Volume']) else 0
+                })
+            except Exception as row_error:
+                print(f"⚠️ Error processing row: {row_error}")
+                continue
+        
+        print(f"✅ Retrieved {len(data)} data points for {symbol} ({period})")
         
         return {
             "symbol": symbol.upper(),
@@ -1396,7 +1394,10 @@ async def get_ticker_history(symbol: str, period: str = "1y"):
             "data": data
         }
     except Exception as e:
-        return {"error": str(e)}
+        print(f"❌ Error in get_ticker_history: {e}")
+        import traceback
+        traceback.print_exc()
+        return {"error": str(e), "symbol": symbol.upper(), "period": period, "data": []}
 
 
 @app.get("/api/health")

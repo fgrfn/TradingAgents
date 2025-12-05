@@ -5422,6 +5422,25 @@
             if (!ticker) return;
             
             currentOverviewTicker = ticker.toUpperCase();
+            
+            // Auto-correct: If user entered company name instead of ticker, search for correct symbol
+            if (currentOverviewTicker.length > 5) {
+                try {
+                    const searchResponse = await fetch(`/api/search/ticker?q=${encodeURIComponent(currentOverviewTicker)}&limit=1`);
+                    const searchData = await searchResponse.json();
+                    
+                    if (searchData.success && searchData.results.length > 0) {
+                        const correctTicker = searchData.results[0].symbol;
+                        console.log(`💡 Auto-korrigiert: "${currentOverviewTicker}" → "${correctTicker}"`);
+                        currentOverviewTicker = correctTicker;
+                        document.getElementById('ticker').value = correctTicker;
+                        showToast(`Ticker korrigiert zu ${correctTicker}`, 'info', 3000);
+                    }
+                } catch (e) {
+                    console.warn('Auto-correction failed:', e);
+                }
+            }
+            
             const overview = document.getElementById('tickerOverview');
             const emptyState = document.querySelector('.empty-state');
             const resultsContent = document.getElementById('resultsContent');
@@ -5662,20 +5681,20 @@
             
             // Determine if dark mode
             const isDarkMode = document.body.classList.contains('dark-mode');
-            const textColor = isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(51, 65, 85, 0.9)';
-            const gridColor = isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)';
+            const textColor = isDarkMode ? 'rgba(255, 255, 255, 0.6)' : 'rgba(100, 116, 139, 0.9)';
+            const gridColor = isDarkMode ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.04)';
             
-            // Modern color scheme based on trend
+            // Modern color scheme based on trend - mehr wie der Rest der UI
             const lineColor = isPositive 
-                ? (isDarkMode ? '#10b981' : '#059669')  // Green for positive
-                : (isDarkMode ? '#ef4444' : '#dc2626'); // Red for negative
+                ? (isDarkMode ? '#10b981' : '#10b981')  // Consistent green
+                : (isDarkMode ? '#ef4444' : '#ef4444'); // Consistent red
             
             // Draw subtle grid with horizontal lines only
             ctx.strokeStyle = gridColor;
-            ctx.lineWidth = 1;
+            ctx.lineWidth = 0.5;
             
-            for (let i = 0; i <= 4; i++) {
-                const y = padding.top + (i / 4) * chartHeight;
+            for (let i = 0; i <= 5; i++) {
+                const y = padding.top + (i / 5) * chartHeight;
                 ctx.beginPath();
                 ctx.moveTo(padding.left, y);
                 ctx.lineTo(width - padding.right, y);
@@ -5684,13 +5703,13 @@
             
             // Draw Y-axis labels with better styling
             ctx.fillStyle = textColor;
-            ctx.font = 'bold 13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+            ctx.font = '600 11px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
             ctx.textAlign = 'right';
             ctx.textBaseline = 'middle';
             
-            for (let i = 0; i <= 4; i++) {
-                const y = padding.top + (i / 4) * chartHeight;
-                const price = maxPrice - (i / 4) * priceRange;
+            for (let i = 0; i <= 5; i++) {
+                const y = padding.top + (i / 5) * chartHeight;
+                const price = maxPrice - (i / 5) * priceRange;
                 ctx.fillText(price.toFixed(2), padding.left - 15, y);
             }
             
@@ -5698,7 +5717,8 @@
             const dates = overviewChartData.dates;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'top';
-            ctx.font = '12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+            ctx.font = '600 10px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+            ctx.fillStyle = textColor;
             
             const labelInterval = Math.max(1, Math.ceil(dates.length / 6));
             
@@ -5709,14 +5729,14 @@
                 ctx.fillText(label, x, height - padding.bottom + 12);
             }
             
-            // Create gradient fill
+            // Create gradient fill - subtiler
             const gradient = ctx.createLinearGradient(0, padding.top, 0, height - padding.bottom);
             if (isPositive) {
-                gradient.addColorStop(0, isDarkMode ? 'rgba(16, 185, 129, 0.3)' : 'rgba(5, 150, 105, 0.25)');
-                gradient.addColorStop(1, isDarkMode ? 'rgba(16, 185, 129, 0.02)' : 'rgba(5, 150, 105, 0.02)');
+                gradient.addColorStop(0, isDarkMode ? 'rgba(16, 185, 129, 0.15)' : 'rgba(16, 185, 129, 0.12)');
+                gradient.addColorStop(1, isDarkMode ? 'rgba(16, 185, 129, 0.01)' : 'rgba(16, 185, 129, 0.01)');
             } else {
-                gradient.addColorStop(0, isDarkMode ? 'rgba(239, 68, 68, 0.3)' : 'rgba(220, 38, 38, 0.25)');
-                gradient.addColorStop(1, isDarkMode ? 'rgba(239, 68, 68, 0.02)' : 'rgba(220, 38, 38, 0.02)');
+                gradient.addColorStop(0, isDarkMode ? 'rgba(239, 68, 68, 0.15)' : 'rgba(239, 68, 68, 0.12)');
+                gradient.addColorStop(1, isDarkMode ? 'rgba(239, 68, 68, 0.01)' : 'rgba(239, 68, 68, 0.01)');
             }
             
             // Draw filled area first
@@ -5734,15 +5754,15 @@
             ctx.fillStyle = gradient;
             ctx.fill();
             
-            // Draw smooth line with shadow
+            // Draw smooth line with subtle shadow
             ctx.shadowColor = isPositive 
-                ? (isDarkMode ? 'rgba(16, 185, 129, 0.5)' : 'rgba(5, 150, 105, 0.4)')
-                : (isDarkMode ? 'rgba(239, 68, 68, 0.5)' : 'rgba(220, 38, 38, 0.4)');
-            ctx.shadowBlur = 8;
-            ctx.shadowOffsetY = 2;
+                ? 'rgba(16, 185, 129, 0.3)'
+                : 'rgba(239, 68, 68, 0.3)';
+            ctx.shadowBlur = 4;
+            ctx.shadowOffsetY = 1;
             
             ctx.strokeStyle = lineColor;
-            ctx.lineWidth = 3;
+            ctx.lineWidth = 2.5;
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
             ctx.beginPath();
@@ -5762,25 +5782,25 @@
             ctx.shadowBlur = 0;
             ctx.shadowOffsetY = 0;
             
-            // Draw start and end points with glow
+            // Draw start and end points - kleiner und subtiler
             const drawPoint = (x, y, isEnd = false) => {
                 // Outer glow
                 ctx.beginPath();
-                ctx.arc(x, y, 8, 0, Math.PI * 2);
+                ctx.arc(x, y, 6, 0, Math.PI * 2);
                 ctx.fillStyle = isPositive 
-                    ? (isDarkMode ? 'rgba(16, 185, 129, 0.2)' : 'rgba(5, 150, 105, 0.2)')
-                    : (isDarkMode ? 'rgba(239, 68, 68, 0.2)' : 'rgba(220, 38, 38, 0.2)');
+                    ? 'rgba(16, 185, 129, 0.15)'
+                    : 'rgba(239, 68, 68, 0.15)';
                 ctx.fill();
                 
                 // Main point
                 ctx.beginPath();
-                ctx.arc(x, y, 4, 0, Math.PI * 2);
+                ctx.arc(x, y, 3.5, 0, Math.PI * 2);
                 ctx.fillStyle = lineColor;
                 ctx.fill();
                 
                 // White center
                 ctx.beginPath();
-                ctx.arc(x, y, 2, 0, Math.PI * 2);
+                ctx.arc(x, y, 1.5, 0, Math.PI * 2);
                 ctx.fillStyle = isDarkMode ? '#1f2937' : '#ffffff';
                 ctx.fill();
             };
@@ -5790,28 +5810,137 @@
             const firstY = padding.top + chartHeight - ((prices[0] - minPrice) / priceRange) * chartHeight;
             drawPoint(firstX, firstY);
             
-            // Draw last point with larger size
+            // Draw last point - etwas größer als andere Punkte
             const lastX = padding.left + chartWidth;
             const lastY = padding.top + chartHeight - ((prices[prices.length - 1] - minPrice) / priceRange) * chartHeight;
             
             ctx.beginPath();
-            ctx.arc(lastX, lastY, 10, 0, Math.PI * 2);
+            ctx.arc(lastX, lastY, 7, 0, Math.PI * 2);
             ctx.fillStyle = isPositive 
-                ? (isDarkMode ? 'rgba(16, 185, 129, 0.25)' : 'rgba(5, 150, 105, 0.25)')
-                : (isDarkMode ? 'rgba(239, 68, 68, 0.25)' : 'rgba(220, 38, 38, 0.25)');
+                ? 'rgba(16, 185, 129, 0.2)'
+                : 'rgba(239, 68, 68, 0.2)';
             ctx.fill();
             
             ctx.beginPath();
-            ctx.arc(lastX, lastY, 5, 0, Math.PI * 2);
+            ctx.arc(lastX, lastY, 4, 0, Math.PI * 2);
             ctx.fillStyle = lineColor;
             ctx.fill();
             
             ctx.beginPath();
-            ctx.arc(lastX, lastY, 2.5, 0, Math.PI * 2);
+            ctx.arc(lastX, lastY, 2, 0, Math.PI * 2);
             ctx.fillStyle = isDarkMode ? '#1f2937' : '#ffffff';
             ctx.fill();
             
             console.log('✅ Chart erfolgreich gerendert');
+            
+            // Add hover interaction
+            setupChartHover(canvas, { padding, chartWidth, chartHeight, minPrice, maxPrice, priceRange, prices, dates: overviewChartData.dates, isDarkMode, lineColor, isPositive });
+        }
+        
+        function setupChartHover(canvas, chartData) {
+            const { padding, chartWidth, chartHeight, minPrice, maxPrice, priceRange, prices, dates, isDarkMode, lineColor, isPositive } = chartData;
+            
+            // Remove old event listeners
+            const oldCanvas = canvas.cloneNode(true);
+            canvas.parentNode.replaceChild(oldCanvas, canvas);
+            const ctx = oldCanvas.getContext('2d');
+            
+            let tooltip = document.getElementById('chartTooltip');
+            if (!tooltip) {
+                tooltip = document.createElement('div');
+                tooltip.id = 'chartTooltip';
+                tooltip.style.cssText = `
+                    position: absolute;
+                    display: none;
+                    background: ${isDarkMode ? 'rgba(31, 41, 55, 0.95)' : 'rgba(255, 255, 255, 0.95)'};
+                    border: 1px solid ${isDarkMode ? 'rgba(75, 85, 99, 0.5)' : 'rgba(226, 232, 240, 0.8)'};
+                    border-radius: 8px;
+                    padding: 8px 12px;
+                    font-size: 12px;
+                    font-weight: 600;
+                    pointer-events: none;
+                    z-index: 1000;
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                    backdrop-filter: blur(8px);
+                `;
+                document.body.appendChild(tooltip);
+            }
+            
+            oldCanvas.addEventListener('mousemove', (e) => {
+                const rect = oldCanvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                // Check if within chart area
+                if (x < padding.left || x > padding.left + chartWidth || y < padding.top || y > padding.top + chartHeight) {
+                    tooltip.style.display = 'none';
+                    renderOverviewChart();
+                    return;
+                }
+                
+                // Find closest data point
+                const relativeX = x - padding.left;
+                const index = Math.round((relativeX / chartWidth) * (prices.length - 1));
+                
+                if (index >= 0 && index < prices.length) {
+                    const price = prices[index];
+                    const date = new Date(dates[index]);
+                    const pointX = padding.left + (index / (prices.length - 1)) * chartWidth;
+                    const pointY = padding.top + chartHeight - ((price - minPrice) / priceRange) * chartHeight;
+                    
+                    // Redraw chart
+                    renderOverviewChart();
+                    
+                    // Draw hover line
+                    ctx.strokeStyle = isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.15)';
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([4, 4]);
+                    ctx.beginPath();
+                    ctx.moveTo(pointX, padding.top);
+                    ctx.lineTo(pointX, padding.top + chartHeight);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    
+                    // Draw hover point
+                    ctx.beginPath();
+                    ctx.arc(pointX, pointY, 8, 0, Math.PI * 2);
+                    ctx.fillStyle = isPositive ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)';
+                    ctx.fill();
+                    
+                    ctx.beginPath();
+                    ctx.arc(pointX, pointY, 5, 0, Math.PI * 2);
+                    ctx.fillStyle = lineColor;
+                    ctx.fill();
+                    
+                    ctx.beginPath();
+                    ctx.arc(pointX, pointY, 2.5, 0, Math.PI * 2);
+                    ctx.fillStyle = isDarkMode ? '#1f2937' : '#ffffff';
+                    ctx.fill();
+                    
+                    // Show tooltip
+                    const dateStr = date.toLocaleDateString('de-DE', { day: 'numeric', month: 'short', year: 'numeric' });
+                    const timeStr = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+                    
+                    tooltip.innerHTML = `
+                        <div style="color: ${isDarkMode ? '#e5e7eb' : '#1f2937'}; margin-bottom: 4px;">${dateStr}</div>
+                        <div style="color: ${lineColor}; font-size: 14px; font-weight: 700;">$${price.toFixed(2)}</div>
+                    `;
+                    
+                    tooltip.style.display = 'block';
+                    tooltip.style.left = (e.clientX + 15) + 'px';
+                    tooltip.style.top = (e.clientY - 40) + 'px';
+                    
+                    // Update tooltip background based on current dark mode
+                    const currentIsDarkMode = document.body.classList.contains('dark-mode');
+                    tooltip.style.background = currentIsDarkMode ? 'rgba(31, 41, 55, 0.95)' : 'rgba(255, 255, 255, 0.95)';
+                    tooltip.style.borderColor = currentIsDarkMode ? 'rgba(75, 85, 99, 0.5)' : 'rgba(226, 232, 240, 0.8)';
+                }
+            });
+            
+            oldCanvas.addEventListener('mouseleave', () => {
+                tooltip.style.display = 'none';
+                renderOverviewChart();
+            });
         }
         
         window.changeOverviewPeriod = async function(days) {
