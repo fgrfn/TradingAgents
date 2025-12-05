@@ -1379,11 +1379,22 @@ async def get_ticker_earnings(symbol: str):
         # Get earnings calendar
         calendar = ticker.calendar
         
-        if calendar is None or calendar.empty:
+        # Check if calendar is None or empty (can be dict or DataFrame)
+        if calendar is None:
+            return {"symbol": symbol.upper(), "earningsDate": None, "error": "No earnings data available"}
+        
+        # If it's a DataFrame, check if empty
+        if hasattr(calendar, 'empty') and calendar.empty:
+            return {"symbol": symbol.upper(), "earningsDate": None, "error": "No earnings data available"}
+        
+        # If it's a dict, check if it has earnings dates
+        if isinstance(calendar, dict) and not calendar.get('Earnings Date'):
             return {"symbol": symbol.upper(), "earningsDate": None, "error": "No earnings data available"}
         
         # Extract earnings date
-        earnings_dates = calendar.get('Earnings Date', [])
+        earnings_dates = calendar.get('Earnings Date', []) if isinstance(calendar, dict) else None
+        if earnings_dates is None:
+            return {"symbol": symbol.upper(), "earningsDate": None, "error": "No earnings data available"}
         earnings_date = None
         
         if earnings_dates and len(earnings_dates) > 0:
