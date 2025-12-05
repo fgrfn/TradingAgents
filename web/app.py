@@ -966,7 +966,7 @@ async def clear_all_history():
 @app.get("/api/search/ticker")
 async def search_ticker(q: str = "", limit: int = 10):
     """
-    Search for ticker symbols by symbol or company name
+    Search for ticker symbols by symbol or company name using Yahoo Finance
     
     Args:
         q: Search query (symbol or company name)
@@ -976,12 +976,42 @@ async def search_ticker(q: str = "", limit: int = 10):
         List of matching ticker symbols with their names
     """
     try:
-        from stock_symbols import search_symbols
-        results = search_symbols(q, limit)
-        return {"success": True, "results": results}
+        import yfinance as yf
+        
+        if not q or len(q) < 1:
+            return {"success": True, "results": []}
+        
+        # Use yfinance search
+        ticker = yf.Ticker(q.upper())
+        info = ticker.info
+        
+        results = []
+        
+        # If ticker exists, add it as first result
+        if info and info.get('symbol'):
+            results.append({
+                "symbol": info.get('symbol', q.upper()),
+                "name": info.get('longName') or info.get('shortName', '')
+            })
+        
+        # Try to find similar tickers (fallback to stock_symbols for suggestions)
+        try:
+            from stock_symbols import search_symbols
+            extra_results = search_symbols(q, limit - len(results))
+            results.extend(extra_results)
+        except:
+            pass
+        
+        return {"success": True, "results": results[:limit]}
     except Exception as e:
-        print(f"Error searching ticker: {e}")
-        return {"success": False, "error": str(e), "results": []}
+        # Fallback to static list if Yahoo Finance fails
+        try:
+            from stock_symbols import search_symbols
+            results = search_symbols(q, limit)
+            return {"success": True, "results": results}
+        except:
+            print(f"Error searching ticker: {e}")
+            return {"success": False, "error": str(e), "results": []}
 
 
 # ========================================

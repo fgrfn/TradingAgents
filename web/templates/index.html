@@ -5341,12 +5341,10 @@
         let currentOverviewPeriod = 5;
         let overviewChartData = null;
         
-        // Cache Management
+        // Cache Management (only for Alpha Vantage data with rate limits)
         const CACHE_DURATIONS = {
-            quote: 5 * 60 * 1000,      // 5 minutes
-            chart: 15 * 60 * 1000,     // 15 minutes
-            fundamentals: 24 * 60 * 60 * 1000,  // 24 hours
-            earnings: 7 * 24 * 60 * 60 * 1000   // 7 days
+            fundamentals: 24 * 60 * 60 * 1000,  // 24 hours - Alpha Vantage OVERVIEW
+            earnings: 7 * 24 * 60 * 60 * 1000   // 7 days - Alpha Vantage EARNINGS
         };
         
         let apiCallsSaved = 0;
@@ -5361,11 +5359,9 @@
                 const age = Date.now() - timestamp;
                 
                 // Determine cache duration based on key type
-                let maxAge = CACHE_DURATIONS.chart;
-                if (key.includes('_quote')) maxAge = CACHE_DURATIONS.quote;
-                else if (key.includes('_fundamentals')) maxAge = CACHE_DURATIONS.fundamentals;
+                let maxAge = CACHE_DURATIONS.fundamentals;
+                if (key.includes('_fundamentals')) maxAge = CACHE_DURATIONS.fundamentals;
                 else if (key.includes('_earnings')) maxAge = CACHE_DURATIONS.earnings;
-                else if (key.includes('_chart_')) maxAge = CACHE_DURATIONS.chart;
                 
                 if (age < maxAge) {
                     const ageMinutes = Math.round(age / 60000);
@@ -5466,15 +5462,6 @@
         async function updateOverviewPrice() {
             if (!currentOverviewTicker) return;
             
-            // Check cache first
-            const cacheKey = `${currentOverviewTicker}_quote`;
-            const cached = getCachedData(cacheKey);
-            
-            if (cached) {
-                displayQuoteData(cached);
-                return;
-            }
-            
             try {
                 console.log('🌐 API Call: Yahoo Finance Quote');
                 const response = await fetch(`/api/ticker/quote/${currentOverviewTicker}`);
@@ -5495,8 +5482,6 @@
                 };
                 
                 if (quote) {
-                    // Cache the quote data
-                    setCachedData(cacheKey, quote);
                     displayQuoteData(quote);
                     
                     // Fetch fundamentals with delay
@@ -5595,16 +5580,6 @@
             else if (days <= 730) period = '2y';
             else period = '5y';
             
-            // Check cache for this period
-            const cacheKey = `${currentOverviewTicker}_chart_${period}`;
-            const cached = getCachedData(cacheKey);
-            
-            if (cached) {
-                console.log(`✅ Chart aus Cache (${period}, 0 API Calls)`);
-                displayChartData(cached, days);
-                return;
-            }
-            
             try {
                 console.log(`🌐 API Call: Yahoo Finance History (${period})`);
                 
@@ -5618,8 +5593,6 @@
                 }
                 
                 if (result.data && result.data.length > 0) {
-                    // Cache the data
-                    setCachedData(cacheKey, result.data);
                     displayChartData(result.data, days);
                 } else {
                     console.error('❌ Keine Daten verfügbar');
@@ -5634,12 +5607,12 @@
         function displayChartData(historyData, days) {
             // historyData is array of {date, close, ...}
             const sortedData = historyData.sort((a, b) => new Date(a.date) - new Date(b.date));
-            const limitedData = sortedData.slice(-days);
             
-            const dates = limitedData.map(item => item.date);
-            const prices = limitedData.map(item => item.close);
+            // Don't limit data - show all data from the fetched period
+            const dates = sortedData.map(item => item.date);
+            const prices = sortedData.map(item => item.close);
             
-            console.log(`✅ ${dates.length} Datenpunkte angezeigt`);
+            console.log(`✅ ${dates.length} Datenpunkte angezeigt (Period: ${days} Tage)`);
             console.log('📈 Preisspanne:', Math.min(...prices).toFixed(2), '-', Math.max(...prices).toFixed(2));
             
             overviewChartData = { dates, prices, fullHistory: historyData };
@@ -5864,14 +5837,8 @@
             };
             document.getElementById('overviewChartPeriod').textContent = labels[days] || `${days} Tage`;
             
-            // Try to use cached full data first
-            if (overviewChartData && overviewChartData.fullHistory) {
-                console.log('✅ Verwende gecachte Daten für Periodenwechsel (KEIN API Call!)');
-                displayChartData(overviewChartData.fullHistory, days);
-            } else {
-                // Only fetch if no cached data available
-                await updateOverviewChart(days);
-            }
+            // Always fetch new period data (will use cache if available)
+            await updateOverviewChart(days);
         }
         
         function formatVolume(volume) {
