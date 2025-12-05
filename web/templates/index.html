@@ -5795,7 +5795,8 @@
                             displayColors: false,
                             callbacks: {
                                 label: function(context) {
-                                    return '$' + context.parsed.y.toFixed(2);
+                                    const currency = getCurrencySymbol(currentOverviewTicker || '');
+                                    return currency + context.parsed.y.toFixed(2);
                                 }
                             }
                         }
@@ -5827,7 +5828,8 @@
                                     weight: '600'
                                 },
                                 callback: function(value) {
-                                    return '$' + value.toFixed(2);
+                                    const currency = getCurrencySymbol(currentOverviewTicker || '');
+                                    return currency + value.toFixed(2);
                                 }
                             }
                         }
