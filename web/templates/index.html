@@ -5403,6 +5403,14 @@
             cacheCount.textContent = apiCallsSaved;
             apiCallCount.textContent = totalApiCalls;
             
+            // Hide badge if no API calls made yet (only Yahoo Finance data loaded)
+            if (totalApiCalls === 0) {
+                cacheInfo.style.display = 'none';
+                return;
+            }
+            
+            cacheInfo.style.display = 'flex';
+            
             // Update badge color based on cache efficiency
             const efficiency = totalApiCalls > 0 ? (apiCallsSaved / totalApiCalls) * 100 : 0;
             
@@ -5420,6 +5428,11 @@
         
         async function showTickerOverview(ticker) {
             if (!ticker) return;
+            
+            // Reset cache counters for new ticker
+            apiCallsSaved = 0;
+            totalApiCalls = 0;
+            updateCacheInfo();
             
             currentOverviewTicker = ticker.toUpperCase();
             
