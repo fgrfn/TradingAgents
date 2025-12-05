@@ -5334,10 +5334,19 @@
             
             try {
                 const alphaKey = document.getElementById('alphaVantageKey').value;
-                const response = await fetch(`https://www.alphavantage.co/query?function=OVERVIEW&symbol=${currentOverviewTicker}&apikey=${alphaKey}`);
+                if (!alphaKey) return;
+                
+                console.log(`📊 Lade Fundamentaldaten für ${currentOverviewTicker}...`);
+                
+                const url = `https://www.alphavantage.co/query?function=OVERVIEW&symbol=${currentOverviewTicker}&apikey=${alphaKey}`;
+                const response = await fetch(url);
                 const data = await response.json();
                 
+                console.log('📥 OVERVIEW Response:', data);
+                
                 if (data && data.Symbol) {
+                    console.log('✅ Fundamentaldaten geladen');
+                    
                     // Market Cap
                     const marketCap = parseInt(data.MarketCapitalization);
                     document.getElementById('overviewMarketCap').textContent = marketCap ? formatMarketCap(marketCap) : 'N/A';
@@ -5351,9 +5360,13 @@
                     document.getElementById('overviewDividend').textContent = data.DividendYield ? (parseFloat(data.DividendYield) * 100).toFixed(2) + '%' : 'N/A';
                     document.getElementById('overviewEPS').textContent = data.EPS || 'N/A';
                     document.getElementById('overviewBeta').textContent = data.Beta || 'N/A';
+                } else if (data.Note) {
+                    console.warn('⚠️ API Limit erreicht:', data.Note);
+                } else {
+                    console.warn('⚠️ Keine Fundamentaldaten verfügbar für', currentOverviewTicker);
                 }
             } catch (error) {
-                console.error('Error fetching fundamentals:', error);
+                console.error('❌ Error fetching fundamentals:', error);
             }
         }
         
@@ -5362,35 +5375,62 @@
             
             try {
                 const alphaKey = document.getElementById('alphaVantageKey').value;
-                if (!alphaKey) return;
+                if (!alphaKey) {
+                    console.warn('⚠️ Alpha Vantage API Key fehlt');
+                    return;
+                }
+                
+                console.log(`📊 Lade Chart-Daten für ${currentOverviewTicker} (${days} Tage)...`);
                 
                 // Determine outputsize based on days
                 const outputsize = days > 100 ? 'full' : 'compact';
                 
-                const response = await fetch(`https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${currentOverviewTicker}&outputsize=${outputsize}&apikey=${alphaKey}`);
+                const url = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${currentOverviewTicker}&outputsize=${outputsize}&apikey=${alphaKey}`;
+                const response = await fetch(url);
                 const data = await response.json();
+                
+                console.log('📥 Alpha Vantage Response:', data);
                 
                 if (data['Time Series (Daily)']) {
                     const timeSeries = data['Time Series (Daily)'];
-                    const dates = Object.keys(timeSeries).reverse().slice(-days);
+                    const allDates = Object.keys(timeSeries).sort();
+                    const dates = allDates.slice(-days);
                     const prices = dates.map(date => parseFloat(timeSeries[date]['4. close']));
+                    
+                    console.log(`✅ ${dates.length} Datenpunkte geladen`);
+                    console.log('📈 Preisspanne:', Math.min(...prices).toFixed(2), '-', Math.max(...prices).toFixed(2));
                     
                     overviewChartData = { dates, prices };
                     renderOverviewChart();
                     
                     // Update chart info
                     document.getElementById('overviewDataPoints').textContent = prices.length;
+                } else if (data.Note) {
+                    console.warn('⚠️ API Limit erreicht:', data.Note);
+                    alert('Alpha Vantage API Limit erreicht. Bitte warten Sie 1 Minute.');
+                } else if (data['Error Message']) {
+                    console.error('❌ API Fehler:', data['Error Message']);
+                    alert('Ticker nicht gefunden oder ungültig: ' + data['Error Message']);
+                } else {
+                    console.error('❌ Unerwartete API-Antwort:', data);
                 }
             } catch (error) {
-                console.error('Error fetching chart data:', error);
+                console.error('❌ Error fetching chart data:', error);
+                alert('Fehler beim Laden der Chart-Daten: ' + error.message);
             }
         }
         
         function renderOverviewChart() {
-            if (!overviewChartData) return;
+            if (!overviewChartData) {
+                console.warn('⚠️ Keine Chart-Daten verfügbar');
+                return;
+            }
             
             const canvas = document.getElementById('overviewChart');
-            if (!canvas) return;
+            if (!canvas) {
+                console.warn('⚠️ Canvas-Element nicht gefunden');
+                return;
+            }
             
             const ctx = canvas.getContext('2d');
             const width = canvas.width;
@@ -5400,34 +5440,68 @@
             ctx.clearRect(0, 0, width, height);
             
             const prices = overviewChartData.prices;
-            if (prices.length === 0) return;
+            if (prices.length === 0) {
+                console.warn('⚠️ Keine Preisdaten zum Rendern');
+                return;
+            }
+            
+            console.log(`📊 Rendering Chart mit ${prices.length} Datenpunkten`);
             
             const minPrice = Math.min(...prices);
             const maxPrice = Math.max(...prices);
             const priceRange = maxPrice - minPrice || 1;
             
-            // Draw grid
-            ctx.strokeStyle = 'rgba(128, 128, 128, 0.2)';
-            ctx.lineWidth = 1;
-            for (let i = 0; i <= 4; i++) {
-                const y = (i / 4) * height;
-                ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(width, y);
-                ctx.stroke();
-            }
+            // Chart area with padding for labels
+            const padding = { left: 60, right: 20, top: 20, bottom: 30 };
+            const chartWidth = width - padding.left - padding.right;
+            const chartHeight = height - padding.top - padding.bottom;
             
             // Determine if dark mode
             const isDarkMode = document.body.classList.contains('dark-mode');
+            const textColor = isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)';
+            const gridColor = isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+            
+            // Draw grid and Y-axis labels
+            ctx.strokeStyle = gridColor;
+            ctx.lineWidth = 1;
+            ctx.fillStyle = textColor;
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'right';
+            
+            for (let i = 0; i <= 4; i++) {
+                const y = padding.top + (i / 4) * chartHeight;
+                const price = maxPrice - (i / 4) * priceRange;
+                
+                // Draw grid line
+                ctx.beginPath();
+                ctx.moveTo(padding.left, y);
+                ctx.lineTo(width - padding.right, y);
+                ctx.stroke();
+                
+                // Draw Y-axis label
+                ctx.fillText(price.toFixed(2), padding.left - 10, y + 4);
+            }
+            
+            // Draw X-axis labels (dates)
+            const dates = overviewChartData.dates;
+            ctx.textAlign = 'center';
+            const labelInterval = Math.ceil(dates.length / 6); // Show ~6 labels
+            
+            for (let i = 0; i < dates.length; i += labelInterval) {
+                const x = padding.left + (i / (prices.length - 1)) * chartWidth;
+                const date = new Date(dates[i]);
+                const label = date.toLocaleDateString('de-DE', { month: 'short', day: 'numeric' });
+                ctx.fillText(label, x, height - padding.bottom + 20);
+            }
             
             // Draw price line
             ctx.strokeStyle = isDarkMode ? 'rgba(96, 165, 250, 0.9)' : 'rgba(59, 130, 246, 0.9)';
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 3;
             ctx.beginPath();
             
             prices.forEach((price, index) => {
-                const x = (index / (prices.length - 1)) * width;
-                const y = height - ((price - minPrice) / priceRange) * height;
+                const x = padding.left + (index / (prices.length - 1)) * chartWidth;
+                const y = padding.top + chartHeight - ((price - minPrice) / priceRange) * chartHeight;
                 
                 if (index === 0) {
                     ctx.moveTo(x, y);
@@ -5439,11 +5513,13 @@
             ctx.stroke();
             
             // Fill area under line
-            ctx.lineTo(width, height);
-            ctx.lineTo(0, height);
+            ctx.lineTo(padding.left + chartWidth, padding.top + chartHeight);
+            ctx.lineTo(padding.left, padding.top + chartHeight);
             ctx.closePath();
-            ctx.fillStyle = isDarkMode ? 'rgba(96, 165, 250, 0.1)' : 'rgba(59, 130, 246, 0.1)';
+            ctx.fillStyle = isDarkMode ? 'rgba(96, 165, 250, 0.15)' : 'rgba(59, 130, 246, 0.15)';
             ctx.fill();
+            
+            console.log('✅ Chart erfolgreich gerendert');
         }
         
         window.changeOverviewPeriod = async function(days) {
