@@ -5423,9 +5423,16 @@
             
             currentOverviewTicker = ticker.toUpperCase();
             
-            // Auto-correct: If user entered company name instead of ticker, search for correct symbol
-            if (currentOverviewTicker.length > 5) {
-                try {
+            // Always validate ticker - try to find correct symbol if invalid
+            try {
+                // First, test if ticker is valid by trying to get quote
+                const testResponse = await fetch(`/api/ticker/quote/${currentOverviewTicker}`);
+                const testData = await testResponse.json();
+                
+                // If error or no valid data, try to find correct ticker
+                if (testData.error || !testData.price || testData.price === 0) {
+                    console.log(`⚠️ Ticker "${currentOverviewTicker}" nicht gefunden, suche nach korrektem Symbol...`);
+                    
                     const searchResponse = await fetch(`/api/search/ticker?q=${encodeURIComponent(currentOverviewTicker)}&limit=1`);
                     const searchData = await searchResponse.json();
                     
@@ -5435,10 +5442,13 @@
                         currentOverviewTicker = correctTicker;
                         document.getElementById('ticker').value = correctTicker;
                         showToast(`Ticker korrigiert zu ${correctTicker}`, 'info', 3000);
+                    } else {
+                        showToast(`Ticker "${currentOverviewTicker}" nicht gefunden`, 'error', 3000);
+                        return;
                     }
-                } catch (e) {
-                    console.warn('Auto-correction failed:', e);
                 }
+            } catch (e) {
+                console.warn('Ticker validation failed:', e);
             }
             
             const overview = document.getElementById('tickerOverview');
@@ -5460,6 +5470,9 @@
             // Set currency
             const currency = getCurrencySymbol(currentOverviewTicker);
             document.getElementById('overviewCurrency').textContent = currency;
+            
+            // Add to recent tickers (only after validation)
+            addRecentTicker(currentOverviewTicker);
             
             // Sequential loading with delays to reduce API burst
             console.log('📊 Lade Ticker-Daten sequentiell...');
