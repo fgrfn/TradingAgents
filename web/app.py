@@ -1293,6 +1293,82 @@ async def lifespan(app: FastAPI):
 app.router.lifespan_context = lifespan
 
 
+@app.get("/api/ticker/quote/{symbol}")
+async def get_ticker_quote(symbol: str):
+    """Get live quote data from Yahoo Finance"""
+    try:
+        import yfinance as yf
+        ticker = yf.Ticker(symbol.upper())
+        info = ticker.info
+        
+        # Get current price and change
+        current_price = info.get('currentPrice') or info.get('regularMarketPrice', 0)
+        previous_close = info.get('previousClose', 0)
+        change = current_price - previous_close if previous_close else 0
+        change_percent = (change / previous_close * 100) if previous_close else 0
+        
+        return {
+            "symbol": symbol.upper(),
+            "price": round(current_price, 2),
+            "change": round(change, 2),
+            "change_percent": round(change_percent, 2),
+            "volume": info.get('volume', 0),
+            "market_cap": info.get('marketCap', 0),
+            "currency": info.get('currency', 'USD'),
+            "exchange": info.get('exchange', ''),
+            "name": info.get('longName', symbol.upper())
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.get("/api/ticker/history/{symbol}")
+async def get_ticker_history(symbol: str, period: str = "1y"):
+    """Get historical price data from Yahoo Finance"""
+    try:
+        import yfinance as yf
+        ticker = yf.Ticker(symbol.upper())
+        
+        # Map period strings
+        period_map = {
+            "1d": "1d",
+            "5d": "5d",
+            "1m": "1mo",
+            "3m": "3mo",
+            "6m": "6mo",
+            "1y": "1y",
+            "2y": "2y",
+            "5y": "5y",
+            "max": "max"
+        }
+        
+        yf_period = period_map.get(period, "1y")
+        hist = ticker.history(period=yf_period)
+        
+        if hist.empty:
+            return {"error": "No data available"}
+        
+        # Convert to simple format
+        data = []
+        for date, row in hist.iterrows():
+            data.append({
+                "date": date.strftime("%Y-%m-%d"),
+                "open": round(row['Open'], 2),
+                "high": round(row['High'], 2),
+                "low": round(row['Low'], 2),
+                "close": round(row['Close'], 2),
+                "volume": int(row['Volume'])
+            })
+        
+        return {
+            "symbol": symbol.upper(),
+            "period": period,
+            "data": data
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+
 @app.get("/api/health")
 async def health_check():
     """Health check endpoint"""
