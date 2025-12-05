@@ -15,6 +15,7 @@ import sys
 import requests
 from datetime import datetime, timezone
 from pathlib import Path
+from contextlib import asynccontextmanager
 
 # Add parent directory to path to import tradingagents
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -23,21 +24,8 @@ from tradingagents.graph.trading_graph import TradingAgentsGraph
 from tradingagents.default_config import DEFAULT_CONFIG
 from cli.models import AnalystType
 
-app = FastAPI(title="TradingAgents Web UI", version="1.0.0")
-
-# CORS Middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Statische Dateien
-static_path = Path(__file__).parent / "static"
-static_path.mkdir(exist_ok=True)
-app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
+# App will be created after lifespan definition (see bottom of file)
+app = None
 
 
 class AnalysisRequest(BaseModel):
@@ -1238,10 +1226,10 @@ def run_analysis_sync(analysis_id: str, request: AnalysisRequest, webhook_url: O
         print(f"Error in scheduled analysis: {e}")
 
 
-# Load existing schedules on startup
-@app.on_event("startup")
-async def load_schedules():
-    """Load all active schedules from database on startup"""
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan event handler for startup and shutdown"""
+    # Startup
     try:
         conn = sqlite3.connect(str(DB_PATH))
         cursor = conn.cursor()
@@ -1255,7 +1243,10 @@ async def load_schedules():
             WHERE is_active = 1
         """)
         
-        for row in cursor.fetchall():
+        rows = cursor.fetchall()
+        count = len(rows)
+        
+        for row in rows:
             schedule_req = ScheduleRequest(
                 ticker=row[1],
                 analysts=json.loads(row[2]),
@@ -1273,10 +1264,33 @@ async def load_schedules():
             _add_scheduled_job(row[0], schedule_req)
         
         conn.close()
-        print(f"✅ {cursor.rowcount} aktive Schedules geladen")
+        print(f"✅ {count} aktive Schedules geladen")
         
     except Exception as e:
         print(f"Error loading schedules: {e}")
+    
+    yield
+    
+    # Shutdown
+    scheduler.shutdown()
+
+
+# Create FastAPI app with lifespan
+app = FastAPI(title="TradingAgents Web UI", version="1.0.0", lifespan=lifespan)
+
+# CORS Middleware (need to add again after app creation)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Statische Dateien
+static_path = Path(__file__).parent / "static"
+static_path.mkdir(exist_ok=True)
+app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
 
 
 @app.get("/api/health")

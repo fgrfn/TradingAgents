@@ -4036,17 +4036,34 @@
                 const content1 = document.getElementById('compareContent1');
                 const content2 = document.getElementById('compareContent2');
                 
-                // Synchronized scrolling
+                // Synchronized scrolling - only vertical, user-initiated
                 const panels = document.querySelectorAll('.compare-panel');
-                let isScrolling = false;
+                let syncScrollTimeout = null;
                 
                 panels.forEach((panel, index) => {
-                    panel.addEventListener('scroll', () => {
-                        if (!isScrolling) {
-                            isScrolling = true;
-                            const otherPanel = panels[index === 0 ? 1 : 0];
-                            otherPanel.scrollTop = panel.scrollTop;
-                            setTimeout(() => isScrolling = false, 50);
+                    let lastScrollTop = panel.scrollTop;
+                    
+                    panel.addEventListener('scroll', function(e) {
+                        // Clear any pending sync
+                        if (syncScrollTimeout) {
+                            clearTimeout(syncScrollTimeout);
+                        }
+                        
+                        // Only sync if user is actually scrolling (not programmatic)
+                        if (Math.abs(this.scrollTop - lastScrollTop) > 0) {
+                            syncScrollTimeout = setTimeout(() => {
+                                const otherPanel = panels[index === 0 ? 1 : 0];
+                                const currentScrollTop = this.scrollTop;
+                                
+                                // Only sync vertical scroll, preserve horizontal
+                                if (otherPanel && Math.abs(otherPanel.scrollTop - currentScrollTop) > 5) {
+                                    const otherScrollLeft = otherPanel.scrollLeft;
+                                    otherPanel.scrollTop = currentScrollTop;
+                                    otherPanel.scrollLeft = otherScrollLeft;
+                                }
+                                
+                                lastScrollTop = currentScrollTop;
+                            }, 10);
                         }
                     });
                 });
