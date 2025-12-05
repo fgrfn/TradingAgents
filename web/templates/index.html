@@ -5567,6 +5567,12 @@
         async function fetchOverviewFundamentals() {
             if (!currentOverviewTicker) return;
             
+            // Alpha Vantage only supports US stocks (no suffix like .DE, .L, etc.)
+            if (currentOverviewTicker.includes('.')) {
+                console.log('⚠️ Skipping fundamentals - Alpha Vantage only supports US stocks');
+                return;
+            }
+            
             // Check cache first
             const cacheKey = `${currentOverviewTicker}_fundamentals`;
             const cached = getCachedData(cacheKey);
@@ -5580,7 +5586,7 @@
                 const alphaKey = document.getElementById('alphaVantageKey').value;
                 if (!alphaKey) return;
                 
-                console.log('🌐 API Call: OVERVIEW');
+                console.log('🌐 API Call: OVERVIEW (US stock)');
                 
                 const url = `https://www.alphavantage.co/query?function=OVERVIEW&symbol=${currentOverviewTicker}&apikey=${alphaKey}`;
                 const response = await fetch(url);
@@ -5895,6 +5901,14 @@
         async function fetchEarningsData() {
             if (!currentOverviewTicker) return;
             
+            // Alpha Vantage only supports US stocks (no suffix like .DE, .L, etc.)
+            if (currentOverviewTicker.includes('.')) {
+                console.log('⚠️ Skipping earnings - Alpha Vantage only supports US stocks');
+                const earningsCard = document.getElementById('earningsCard');
+                if (earningsCard) earningsCard.style.display = 'none';
+                return;
+            }
+            
             // Check cache first
             const cacheKey = `${currentOverviewTicker}_earnings`;
             const cached = getCachedData(cacheKey);
@@ -5909,7 +5923,7 @@
                 const alphaKey = document.getElementById('alphaVantageKey').value;
                 if (!alphaKey) return;
                 
-                console.log('🌐 API Call: EARNINGS');
+                console.log('🌐 API Call: EARNINGS (US stock)');
                 
                 const response = await fetch(`https://www.alphavantage.co/query?function=EARNINGS&symbol=${currentOverviewTicker}&apikey=${alphaKey}`);
                 const data = await response.json();
