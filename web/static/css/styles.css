@@ -522,6 +522,24 @@ input[type="range"]::-moz-range-thumb {
     font-size: 1rem;
 }
 
+.cache-info {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+    animation: fadeIn 0.3s ease;
+}
+
+.cache-info i {
+    font-size: 1rem;
+}
+
 .overview-card {
     background: var(--card-bg);
     border-radius: 12px;
