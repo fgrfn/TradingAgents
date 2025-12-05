@@ -782,6 +782,63 @@ input[type="range"]::-moz-range-thumb {
     font-weight: 900;
 }
 
+/* Live Price Widget */
+.live-price-widget {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.live-price-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.8rem;
+}
+
+.live-price-ticker {
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.live-price-badge {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.live-price-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0.5rem 0;
+}
+
+.live-price-change {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.live-price-change.positive {
+    color: #10b981;
+}
+
+.live-price-change.negative {
+    color: #ef4444;
+}
+
+.live-price-time {
+    font-size: 0.75rem;
+    opacity: 0.8;
+}
+
 /* Autocomplete Dropdown */
 .ticker-autocomplete {
     position: absolute;
@@ -869,4 +926,129 @@ input[type="range"]::-moz-range-thumb {
 
 .footer a:hover {
     text-decoration: underline;
+}
+
+/* Schedules Styles */
+.schedules-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.schedule-item {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s ease;
+}
+
+.schedule-item:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.schedule-item.inactive {
+    opacity: 0.6;
+    background: #f8fafc;
+}
+
+.schedule-info {
+    flex: 1;
+}
+
+.schedule-ticker {
+    font-weight: 700;
+    font-size: 1.2rem;
+    color: #1e293b;
+    margin-bottom: 0.3rem;
+}
+
+.schedule-details {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    font-size: 0.85rem;
+    color: #64748b;
+}
+
+.schedule-detail {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.schedule-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.schedule-actions button {
+    padding: 0.4rem 0.8rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+}
+
+.btn-toggle {
+    background: #10b981;
+    color: white;
+}
+
+.btn-toggle:hover {
+    background: #059669;
+}
+
+.btn-toggle.inactive {
+    background: #64748b;
+}
+
+.btn-toggle.inactive:hover {
+    background: #475569;
+}
+
+.btn-delete-schedule {
+    background: #ef4444;
+    color: white;
+}
+
+.btn-delete-schedule:hover {
+    background: #dc2626;
+}
+
+.weekday-selector {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.weekday-selector label {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.4rem 0.8rem;
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.weekday-selector label:hover {
+    background: #e0f2fe;
+    border-color: #0ea5e9;
+}
+
+.weekday-selector input[type="checkbox"] {
+    cursor: pointer;
+}
+
+.weekday-selector input[type="checkbox"]:checked + label {
+    background: #0ea5e9;
+    color: white;
+    border-color: #0284c7;
 }

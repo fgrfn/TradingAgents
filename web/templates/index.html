@@ -1124,25 +1124,54 @@
             font-weight: 600;
         }
         
-        /* Compare View */
+        /* Compare View - Enhanced Side-by-Side */
         .compare-container {
             display: none;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            gap: 2px;
             margin-top: 20px;
+            background: linear-gradient(90deg, #e2e8f0 1px, transparent 1px);
+            background-size: 50% 100%;
+            position: relative;
         }
         
         .compare-container.active {
             display: grid;
         }
         
+        .compare-container::before {
+            content: 'VS';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: bold;
+            font-size: 1.5rem;
+            padding: 12px 20px;
+            border-radius: 50px;
+            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+            z-index: 10;
+            pointer-events: none;
+        }
+        
         .compare-panel {
             background: white;
             border-radius: 12px;
             padding: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            max-height: 600px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            max-height: 700px;
             overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+        
+        .compare-panel:first-child {
+            border-right: 3px solid #667eea;
+        }
+        
+        .compare-panel:last-child {
+            border-left: 3px solid #764ba2;
         }
         
         .compare-header {
@@ -1215,9 +1244,103 @@
             color: #cbd5e1;
         }
         
+        .compare-sections {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .compare-section {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px;
+            transition: all 0.2s ease;
+        }
+        
+        .compare-section:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        
+        .compare-section-title {
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .compare-section-content {
+            font-size: 0.85rem;
+            color: #475569;
+            line-height: 1.5;
+        }
+        
+        .compare-full-text {
+            margin-top: 15px;
+            border-top: 2px solid #e2e8f0;
+            padding-top: 15px;
+        }
+        
+        .compare-full-text summary {
+            cursor: pointer;
+            font-weight: 600;
+            color: #3b82f6;
+            padding: 8px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        
+        .compare-full-text summary:hover {
+            background: #eff6ff;
+        }
+        
+        .compare-full-content {
+            margin-top: 10px;
+            padding: 12px;
+            background: #f8fafc;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            line-height: 1.6;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        body.dark-mode .compare-section {
+            background: #334155;
+            border-color: #475569;
+        }
+        
+        body.dark-mode .compare-section-title {
+            color: #f1f5f9;
+        }
+        
+        body.dark-mode .compare-section-content {
+            color: #cbd5e1;
+        }
+        
         @media (max-width: 1024px) {
             .compare-container {
                 grid-template-columns: 1fr;
+            }
+            
+            .compare-container::before {
+                top: 0;
+                left: 50%;
+                transform: translate(-50%, -50%);
+            }
+            
+            .compare-panel:first-child {
+                border-right: none;
+                border-bottom: 3px solid #667eea;
+            }
+            
+            .compare-panel:last-child {
+                border-left: none;
+                border-top: 3px solid #764ba2;
             }
         }
         
@@ -1353,11 +1476,38 @@
             display: flex;
             flex-direction: column;
             gap: 4px;
+            position: relative;
+        }
+        
+        .compare-info-item.diff {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            padding: 8px;
+            border-radius: 6px;
+            border: 2px solid #f59e0b;
+        }
+        
+        .compare-info-item.diff::after {
+            content: '≠';
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #f59e0b;
+            color: white;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            font-weight: bold;
+            box-shadow: 0 2px 6px rgba(245, 158, 11, 0.4);
         }
         
         .compare-info-label {
             font-size: 0.75rem;
             color: #64748b;
+            font-weight: 600;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -1667,14 +1817,30 @@
 
             <!-- Results Panel -->
             <div class="results-panel">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; gap: 0.5rem;">
                     <h2 style="margin: 0;"><i class="fas fa-chart-pie"></i> Analyseergebnisse</h2>
-                    <button id="showHistoryBtn" class="btn-secondary" style="padding: 0.5rem 1rem;">
-                        <i class="fas fa-history"></i> History
-                    </button>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button id="showSchedulesBtn" class="btn-secondary" style="padding: 0.5rem 1rem;">
+                            <i class="fas fa-clock"></i> Schedules
+                        </button>
+                        <button id="showHistoryBtn" class="btn-secondary" style="padding: 0.5rem 1rem;">
+                            <i class="fas fa-history"></i> History
+                        </button>
+                    </div>
                 </div>
                 
                 <div id="loadingState" class="loading-state" style="display: none;">
+                    <!-- Live Price Widget -->
+                    <div id="livePriceWidget" class="live-price-widget" style="display: none;">
+                        <div class="live-price-header">
+                            <span class="live-price-ticker" id="livePriceTicker">-</span>
+                            <span class="live-price-badge">LIVE</span>
+                        </div>
+                        <div class="live-price-value" id="livePriceValue">-</div>
+                        <div class="live-price-change" id="livePriceChange">-</div>
+                        <div class="live-price-time" id="livePriceTime">-</div>
+                    </div>
+                    
                     <div class="spinner"></div>
                     <p>Analyse läuft...</p>
                     <div class="progress-bar">
@@ -1765,6 +1931,100 @@
                             <div id="compareContent2"></div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Schedules Modal -->
+        <div id="schedulesModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2><i class="fas fa-clock"></i> Geplante Analysen</h2>
+                    <button id="closeSchedulesBtn" class="btn-icon">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <p style="color: #64748b; margin: 0;">Automatische Analysen</p>
+                        <button id="createScheduleBtn" class="btn-primary" style="padding: 0.5rem 1rem;">
+                            <i class="fas fa-plus"></i> Neue Schedule
+                        </button>
+                    </div>
+                    
+                    <div id="schedulesList" class="schedules-list">
+                        <div class="empty-state">
+                            <i class="fas fa-calendar-times"></i>
+                            <p>Keine geplanten Analysen</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Create Schedule Modal -->
+        <div id="createScheduleModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2><i class="fas fa-calendar-plus"></i> Schedule erstellen</h2>
+                    <button id="closeCreateScheduleBtn" class="btn-icon">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="createScheduleForm">
+                        <div class="form-group">
+                            <label><i class="fas fa-chart-line"></i> Ticker</label>
+                            <input type="text" id="schedTicker" required placeholder="z.B. AAPL">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label><i class="fas fa-clock"></i> Zeitplan-Typ</label>
+                            <select id="schedType" required>
+                                <option value="daily">Täglich</option>
+                                <option value="weekly">Wöchentlich</option>
+                                <option value="interval">Intervall (Stunden)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group" id="schedTimeGroup">
+                            <label><i class="fas fa-clock"></i> Uhrzeit</label>
+                            <input type="time" id="schedTime" value="09:00">
+                        </div>
+                        
+                        <div class="form-group" id="schedDaysGroup" style="display: none;">
+                            <label><i class="fas fa-calendar-week"></i> Wochentage</label>
+                            <div class="weekday-selector">
+                                <label><input type="checkbox" value="mon" checked> Mo</label>
+                                <label><input type="checkbox" value="tue" checked> Di</label>
+                                <label><input type="checkbox" value="wed" checked> Mi</label>
+                                <label><input type="checkbox" value="thu" checked> Do</label>
+                                <label><input type="checkbox" value="fri" checked> Fr</label>
+                                <label><input type="checkbox" value="sat"> Sa</label>
+                                <label><input type="checkbox" value="sun"> So</label>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group" id="schedIntervalGroup" style="display: none;">
+                            <label><i class="fas fa-hourglass-half"></i> Intervall (Stunden)</label>
+                            <input type="number" id="schedInterval" min="1" max="168" value="24">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label><i class="fas fa-bell"></i> Webhook-URL (optional)</label>
+                            <input type="url" id="schedWebhook" placeholder="https://discord.com/api/webhooks/...">
+                            <small>Discord-Webhook für Benachrichtigungen</small>
+                        </div>
+                        
+                        <div style="display: flex; gap: 0.5rem; margin-top: 1.5rem;">
+                            <button type="submit" class="btn-primary" style="flex: 1;">
+                                <i class="fas fa-save"></i> Schedule erstellen
+                            </button>
+                            <button type="button" class="btn-secondary" onclick="document.getElementById('createScheduleModal').style.display='none'">
+                                <i class="fas fa-times"></i> Abbrechen
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
@@ -2036,6 +2296,9 @@
                 
                 // Add ticker to recent tickers
                 addRecentTicker(ticker);
+                
+                // Start live price updates
+                startLivePriceUpdates(ticker);
 
                 // Prepare request
                 const requestData = {
@@ -2057,25 +2320,43 @@
                 showLoading();
 
                 try {
-                    const response = await fetch('/api/analyze', {
+                    const response = await fetchWithRetry('/api/analyze', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                         },
                         body: JSON.stringify(requestData)
-                    });
+                    }, 3);
 
                     if (!response.ok) {
                         const errorText = await response.text();
                         console.error('Server error:', errorText);
-                        showError(`Server-Fehler (${response.status}): ${errorText.substring(0, 200)}`);
+                        
+                        // Improved error messages
+                        let errorMessage = `Server-Fehler (${response.status})`;
+                        if (response.status === 429) {
+                            errorMessage = 'API-Limit erreicht. Bitte warten Sie einige Minuten.';
+                        } else if (response.status === 401 || response.status === 403) {
+                            errorMessage = 'Authentifizierungsfehler. Bitte prüfen Sie Ihre API-Keys.';
+                        } else if (response.status === 500) {
+                            errorMessage = 'Interner Server-Fehler. Bitte versuchen Sie es später erneut.';
+                        } else if (response.status === 503) {
+                            errorMessage = 'Service vorübergehend nicht verfügbar. Bitte versuchen Sie es später.';
+                        } else {
+                            errorMessage += `: ${errorText.substring(0, 200)}`;
+                        }
+                        
+                        showError(errorMessage);
+                        showToast(errorMessage, 'error', 5000);
                         return;
                     }
 
                     const startData = await response.json();
                     
                     if (!startData.success) {
-                        showError(startData.message || 'Fehler beim Starten der Analyse');
+                        const errorMsg = startData.message || 'Fehler beim Starten der Analyse';
+                        showError(errorMsg);
+                        showToast(errorMsg, 'error', 5000);
                         return;
                     }
 
@@ -2090,9 +2371,64 @@
                     await pollAnalysisResult(analysisId);
 
                 } catch (error) {
-                    console.error('Fehler bei der Analyse:', error);
-                    showError('Fehler bei der Kommunikation mit dem Server: ' + error.message);
+                    console.error('❌ Fehler bei der Analyse:', error);
+                    
+                    let errorMessage = 'Fehler bei der Kommunikation mit dem Server';
+                    if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
+                        errorMessage = 'Netzwerkfehler. Bitte prüfen Sie Ihre Internetverbindung.';
+                    } else if (error.message.includes('timeout')) {
+                        errorMessage = 'Zeitüberschreitung. Der Server antwortet nicht.';
+                    } else {
+                        errorMessage += `: ${error.message}`;
+                    }
+                    
+                    showError(errorMessage);
+                    showToast(errorMessage, 'error', 5000);
                 }
+            }
+            
+            // Fetch with automatic retry mechanism
+            async function fetchWithRetry(url, options, maxRetries = 3, delayMs = 1000) {
+                let lastError;
+                
+                for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                    try {
+                        console.log(`📡 Versuch ${attempt}/${maxRetries}: ${url}`);
+                        const response = await fetch(url, options);
+                        
+                        // Don't retry on client errors (4xx except 429)
+                        if (response.status >= 400 && response.status < 500 && response.status !== 429) {
+                            return response;
+                        }
+                        
+                        // Retry on 429 (rate limit) or 5xx errors
+                        if (response.status === 429 || response.status >= 500) {
+                            if (attempt < maxRetries) {
+                                const retryDelay = delayMs * Math.pow(2, attempt - 1); // Exponential backoff
+                                console.warn(`⚠️ HTTP ${response.status}, warte ${retryDelay}ms vor erneutem Versuch...`);
+                                showToast(`Verbindungsproblem, Wiederholung in ${retryDelay/1000}s...`, 'warning', retryDelay);
+                                await new Promise(resolve => setTimeout(resolve, retryDelay));
+                                continue;
+                            }
+                        }
+                        
+                        return response;
+                        
+                    } catch (error) {
+                        lastError = error;
+                        console.error(`❌ Versuch ${attempt} fehlgeschlagen:`, error);
+                        
+                        if (attempt < maxRetries) {
+                            const retryDelay = delayMs * Math.pow(2, attempt - 1);
+                            console.log(`🔄 Wiederhole in ${retryDelay}ms...`);
+                            showToast(`Verbindungsfehler, erneuter Versuch in ${retryDelay/1000}s...`, 'warning', retryDelay);
+                            await new Promise(resolve => setTimeout(resolve, retryDelay));
+                        }
+                    }
+                }
+                
+                // All retries failed
+                throw lastError || new Error('Alle Verbindungsversuche fehlgeschlagen');
             }
 
             // Cancel analysis
@@ -2101,6 +2437,7 @@
                     clearInterval(pollingInterval);
                     pollingInterval = null;
                 }
+                stopLivePriceUpdates();
                 currentAnalysisId = null;
                 hideLoading();
                 showToast('Analyse wurde abgebrochen', 'warning', 3000);
@@ -2143,6 +2480,7 @@
                                 clearInterval(progressInterval);
                                 progressInterval = null;
                             }
+                            stopLivePriceUpdates();
                             progressFill.style.width = '100%';
                             statusText.textContent = '✓ Analyse abgeschlossen!';
                             setTimeout(() => showResults(data.result), 300);
@@ -2154,6 +2492,7 @@
                                 clearInterval(progressInterval);
                                 progressInterval = null;
                             }
+                            stopLivePriceUpdates();
                             showError(data.message || 'Fehler bei der Analyse');
                             return;
                         } else if (data.status === 'running') {
@@ -2197,7 +2536,16 @@
                         }
                     } catch (error) {
                         console.error('❌ Polling-Fehler:', error);
-                        showError('Fehler beim Abrufen der Ergebnisse: ' + error.message);
+                        
+                        // Retry logic for polling
+                        if (attempts < 3) {
+                            console.log('🔄 Wiederhole Polling in 2 Sekunden...');
+                            pollingInterval = setTimeout(poll, 2000);
+                        } else {
+                            const errorMsg = 'Fehler beim Abrufen der Ergebnisse: ' + error.message;
+                            showError(errorMsg);
+                            showToast('Verbindung zur Analyse verloren', 'error', 5000);
+                        }
                     }
                 };
 
@@ -3567,6 +3915,39 @@
             const historyList = document.getElementById('historyList');
 
             showHistoryBtn.addEventListener('click', loadHistory);
+            
+            // Schedules Management
+            const schedulesModal = document.getElementById('schedulesModal');
+            const showSchedulesBtn = document.getElementById('showSchedulesBtn');
+            const closeSchedulesBtn = document.getElementById('closeSchedulesBtn');
+            const createScheduleBtn = document.getElementById('createScheduleBtn');
+            const schedulesList = document.getElementById('schedulesList');
+            const createScheduleModal = document.getElementById('createScheduleModal');
+            const closeCreateScheduleBtn = document.getElementById('closeCreateScheduleBtn');
+            const createScheduleForm = document.getElementById('createScheduleForm');
+            const schedTypeSelect = document.getElementById('schedType');
+            
+            showSchedulesBtn.addEventListener('click', loadSchedules);
+            closeSchedulesBtn.addEventListener('click', () => {
+                schedulesModal.style.display = 'none';
+            });
+            closeCreateScheduleBtn.addEventListener('click', () => {
+                createScheduleModal.style.display = 'none';
+            });
+            createScheduleBtn.addEventListener('click', () => {
+                createScheduleModal.style.display = 'flex';
+            });
+            
+            // Schedule type change handler
+            schedTypeSelect.addEventListener('change', (e) => {
+                const type = e.target.value;
+                document.getElementById('schedTimeGroup').style.display = 
+                    (type === 'daily' || type === 'weekly') ? 'block' : 'none';
+                document.getElementById('schedDaysGroup').style.display = 
+                    type === 'weekly' ? 'block' : 'none';
+                document.getElementById('schedIntervalGroup').style.display = 
+                    type === 'interval' ? 'block' : 'none';
+            });
             closeHistoryBtn.addEventListener('click', () => {
                 historyModal.style.display = 'none';
             });
@@ -3655,6 +4036,24 @@
                 const content1 = document.getElementById('compareContent1');
                 const content2 = document.getElementById('compareContent2');
                 
+                // Synchronized scrolling
+                const panels = document.querySelectorAll('.compare-panel');
+                let isScrolling = false;
+                
+                panels.forEach((panel, index) => {
+                    panel.addEventListener('scroll', () => {
+                        if (!isScrolling) {
+                            isScrolling = true;
+                            const otherPanel = panels[index === 0 ? 1 : 0];
+                            otherPanel.scrollTop = panel.scrollTop;
+                            setTimeout(() => isScrolling = false, 50);
+                        }
+                    });
+                });
+                
+                // Find differences between analyses
+                const diffs = findDifferences(compareItems[0], compareItems[1]);
+                
                 [content1, content2].forEach((content, index) => {
                     const item = compareItems[index];
                     const decision = item.decision || 'Unbekannt';
@@ -3687,6 +4086,14 @@
                         </div>
                         
                         <div class="compare-info-grid">
+                            <div class="compare-info-item ${diffs.has('ticker') ? 'diff' : ''}">
+                                <div class="compare-info-label">🎯 Ticker</div>
+                                <div class="compare-info-value">${item.ticker}</div>
+                            </div>
+                            <div class="compare-info-item ${diffs.has('decision') ? 'diff' : ''}">
+                                <div class="compare-info-label">⚡ Entscheidung</div>
+                                <div class="compare-info-value">${decision}</div>
+                            </div>
                             <div class="compare-info-item">
                                 <div class="compare-info-label">📅 Analysedatum</div>
                                 <div class="compare-info-value">${item.date}</div>
@@ -3695,19 +4102,19 @@
                                 <div class="compare-info-label">🕐 Erstellt am</div>
                                 <div class="compare-info-value">${formattedDate}</div>
                             </div>
-                            <div class="compare-info-item">
+                            <div class="compare-info-item ${diffs.has('duration') ? 'diff' : ''}">
                                 <div class="compare-info-label">⏱️ Dauer</div>
                                 <div class="compare-info-value">${durationMin} min</div>
                             </div>
-                            <div class="compare-info-item">
+                            <div class="compare-info-item ${diffs.has('llm_model') ? 'diff' : ''}">
                                 <div class="compare-info-label">🤖 Modell</div>
                                 <div class="compare-info-value">${item.llm_model || 'N/A'}</div>
                             </div>
-                            <div class="compare-info-item">
+                            <div class="compare-info-item ${diffs.has('llm_provider') ? 'diff' : ''}">
                                 <div class="compare-info-label">🔌 Provider</div>
                                 <div class="compare-info-value">${item.llm_provider || 'N/A'}</div>
                             </div>
-                            <div class="compare-info-item">
+                            <div class="compare-info-item ${diffs.has('research_depth') ? 'diff' : ''}">
                                 <div class="compare-info-label">📊 Tiefe</div>
                                 <div class="compare-info-value">${item.research_depth || 'N/A'}</div>
                             </div>
@@ -3736,6 +4143,27 @@
                 container.classList.add('active');
                 container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 showToast('Vergleichsansicht geöffnet', 'success', 2000);
+            }
+            
+            // Find differences between two analyses
+            function findDifferences(item1, item2) {
+                const diffs = new Set();
+                
+                const fields = ['ticker', 'decision', 'llm_model', 'llm_provider', 'research_depth'];
+                fields.forEach(field => {
+                    if (item1[field] !== item2[field]) {
+                        diffs.add(field);
+                    }
+                });
+                
+                // Duration difference (more than 20% difference)
+                const dur1 = item1.duration || 0;
+                const dur2 = item2.duration || 0;
+                if (Math.abs(dur1 - dur2) > Math.max(dur1, dur2) * 0.2) {
+                    diffs.add('duration');
+                }
+                
+                return diffs;
             }
             
             // Extract key sections from analysis text
@@ -3819,6 +4247,186 @@
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 showToast(`Konfiguration für ${ticker} geladen`, 'info', 2000);
             };
+            
+            // ========================================
+            // SCHEDULES FUNCTIONALITY
+            // ========================================
+            
+            async function loadSchedules() {
+                try {
+                    const response = await fetchWithRetry('/api/schedules');
+                    const data = await response.json();
+                    
+                    if (data.success && data.schedules.length > 0) {
+                        schedulesList.innerHTML = '';
+                        data.schedules.forEach(schedule => {
+                            const scheduleEl = createScheduleElement(schedule);
+                            schedulesList.appendChild(scheduleEl);
+                        });
+                    } else {
+                        schedulesList.innerHTML = `
+                            <div class="empty-state">
+                                <i class="fas fa-calendar-times"></i>
+                                <p>Keine geplanten Analysen</p>
+                            </div>
+                        `;
+                    }
+                    
+                    schedulesModal.style.display = 'flex';
+                    
+                } catch (error) {
+                    console.error('Error loading schedules:', error);
+                    showToast('Fehler beim Laden der Schedules', 'error');
+                }
+            }
+            
+            function createScheduleElement(schedule) {
+                const div = document.createElement('div');
+                div.className = `schedule-item ${schedule.is_active ? '' : 'inactive'}`;
+                
+                let scheduleText = '';
+                if (schedule.schedule_type === 'daily') {
+                    scheduleText = `Täglich um ${schedule.schedule_time}`;
+                } else if (schedule.schedule_type === 'weekly') {
+                    const days = schedule.schedule_days.map(d => 
+                        ({mon: 'Mo', tue: 'Di', wed: 'Mi', thu: 'Do', fri: 'Fr', sat: 'Sa', sun: 'So'}[d])
+                    ).join(', ');
+                    scheduleText = `${days} um ${schedule.schedule_time}`;
+                } else if (schedule.schedule_type === 'interval') {
+                    scheduleText = `Alle ${schedule.interval_hours || 24}h`;
+                }
+                
+                const lastRun = schedule.last_run ? 
+                    new Date(schedule.last_run).toLocaleString('de-DE', { 
+                        day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' 
+                    }) : 'Nie';
+                
+                div.innerHTML = `
+                    <div class="schedule-info">
+                        <div class="schedule-ticker">${schedule.ticker}</div>
+                        <div class="schedule-details">
+                            <div class="schedule-detail">
+                                <i class="fas fa-clock"></i>
+                                ${scheduleText}
+                            </div>
+                            <div class="schedule-detail">
+                                <i class="fas fa-users"></i>
+                                ${schedule.analysts.length} Analysten
+                            </div>
+                            <div class="schedule-detail">
+                                <i class="fas fa-history"></i>
+                                Zuletzt: ${lastRun}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="schedule-actions">
+                        <button class="btn-toggle ${schedule.is_active ? '' : 'inactive'}" 
+                                onclick="toggleSchedule('${schedule.id}')">
+                            <i class="fas fa-${schedule.is_active ? 'pause' : 'play'}"></i>
+                            ${schedule.is_active ? 'Pause' : 'Start'}
+                        </button>
+                        <button class="btn-delete-schedule" onclick="deleteSchedule('${schedule.id}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                
+                return div;
+            }
+            
+            window.toggleSchedule = async function(scheduleId) {
+                try {
+                    const response = await fetchWithRetry(`/api/schedules/${scheduleId}/toggle`, {
+                        method: 'PATCH'
+                    });
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        showToast(data.is_active ? 'Schedule aktiviert' : 'Schedule pausiert', 'success', 2000);
+                        loadSchedules();
+                    } else {
+                        showToast('Fehler beim Umschalten', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error toggling schedule:', error);
+                    showToast('Fehler beim Umschalten', 'error');
+                }
+            };
+            
+            window.deleteSchedule = async function(scheduleId) {
+                if (!confirm('Schedule wirklich löschen?')) return;
+                
+                try {
+                    const response = await fetchWithRetry(`/api/schedules/${scheduleId}`, {
+                        method: 'DELETE'
+                    });
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        showToast('Schedule gelöscht', 'success', 2000);
+                        loadSchedules();
+                    } else {
+                        showToast('Fehler beim Löschen', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error deleting schedule:', error);
+                    showToast('Fehler beim Löschen', 'error');
+                }
+            };
+            
+            createScheduleForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const schedType = document.getElementById('schedType').value;
+                const schedData = {
+                    ticker: document.getElementById('schedTicker').value.toUpperCase(),
+                    analysts: Array.from(document.querySelectorAll('input[name="analyst"]:checked'))
+                        .map(cb => cb.value),
+                    llm_provider: providerSelect.value,
+                    provider_url: document.getElementById('providerUrl').value,
+                    deep_think_model: deepModelSelect.value,
+                    quick_think_model: quickModelSelect.value,
+                    research_depth: parseInt(depthSlider.value),
+                    alpha_vantage_key: alphaVantageKeyInput.value,
+                    schedule_type: schedType,
+                    notification_webhook: document.getElementById('schedWebhook').value || null
+                };
+                
+                if (schedType === 'daily' || schedType === 'weekly') {
+                    schedData.schedule_time = document.getElementById('schedTime').value;
+                }
+                
+                if (schedType === 'weekly') {
+                    schedData.schedule_days = Array.from(
+                        document.querySelectorAll('.weekday-selector input:checked')
+                    ).map(cb => cb.value);
+                }
+                
+                if (schedType === 'interval') {
+                    schedData.interval_hours = parseInt(document.getElementById('schedInterval').value);
+                }
+                
+                try {
+                    const response = await fetchWithRetry('/api/schedules', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(schedData)
+                    });
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        showToast('Schedule erstellt!', 'success', 2000, '✅ Erfolgreich');
+                        createScheduleModal.style.display = 'none';
+                        createScheduleForm.reset();
+                        loadSchedules();
+                    } else {
+                        showToast(data.error || 'Fehler beim Erstellen', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error creating schedule:', error);
+                    showToast('Fehler beim Erstellen der Schedule', 'error');
+                }
+            });
             
             // History data storage
             let historyData = [];
@@ -4141,6 +4749,80 @@
         
         // Load recent tickers on page load
         loadRecentTickers();
+        
+        // Live Price Updates
+        let livePriceInterval = null;
+        
+        async function fetchLivePrice(ticker) {
+            try {
+                // Use Yahoo Finance API (via yfinance-style endpoint or direct query)
+                // Alternative: Use Alpha Vantage GLOBAL_QUOTE
+                const cleanTicker = ticker.replace('.DE', '.F').replace('.L', '.LON');
+                
+                // Simplified: Use Alpha Vantage if key is available
+                const apiKey = document.getElementById('alphaVantageKey')?.value;
+                if (!apiKey) return null;
+                
+                const response = await fetch(`https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${ticker}&apikey=${apiKey}`);
+                const data = await response.json();
+                
+                if (data['Global Quote']) {
+                    const quote = data['Global Quote'];
+                    return {
+                        price: parseFloat(quote['05. price']),
+                        change: parseFloat(quote['09. change']),
+                        changePercent: parseFloat(quote['10. change percent'].replace('%', '')),
+                        time: quote['07. latest trading day']
+                    };
+                }
+                return null;
+            } catch (error) {
+                console.warn('Live-Preis konnte nicht abgerufen werden:', error);
+                return null;
+            }
+        }
+        
+        function startLivePriceUpdates(ticker) {
+            const widget = document.getElementById('livePriceWidget');
+            const tickerEl = document.getElementById('livePriceTicker');
+            const valueEl = document.getElementById('livePriceValue');
+            const changeEl = document.getElementById('livePriceChange');
+            const timeEl = document.getElementById('livePriceTime');
+            
+            if (!widget) return;
+            
+            tickerEl.textContent = ticker;
+            widget.style.display = 'block';
+            
+            const updatePrice = async () => {
+                const priceData = await fetchLivePrice(ticker);
+                if (priceData) {
+                    valueEl.textContent = `$${priceData.price.toFixed(2)}`;
+                    
+                    const changeText = `${priceData.change >= 0 ? '+' : ''}${priceData.change.toFixed(2)} (${priceData.changePercent.toFixed(2)}%)`;
+                    changeEl.textContent = changeText;
+                    changeEl.className = 'live-price-change ' + (priceData.change >= 0 ? 'positive' : 'negative');
+                    
+                    timeEl.textContent = `Stand: ${priceData.time}`;
+                }
+            };
+            
+            // Initial update
+            updatePrice();
+            
+            // Update every 30 seconds during analysis
+            if (livePriceInterval) clearInterval(livePriceInterval);
+            livePriceInterval = setInterval(updatePrice, 30000);
+        }
+        
+        function stopLivePriceUpdates() {
+            if (livePriceInterval) {
+                clearInterval(livePriceInterval);
+                livePriceInterval = null;
+            }
+            const widget = document.getElementById('livePriceWidget');
+            if (widget) widget.style.display = 'none';
+        }
         
         // Preset Configurations
         function applyPreset(presetName) {

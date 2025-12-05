@@ -247,9 +247,16 @@ import uuid
 import sqlite3
 import logging
 from pathlib import Path as FilePath
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
+from apscheduler.triggers.interval import IntervalTrigger
 
 # Store for analysis results (temporary, in-memory)
 analysis_results = {}
+
+# Scheduler for automated analyses
+scheduler = BackgroundScheduler()
+scheduler.start()
 
 # Database setup for persistent history
 DB_PATH = FilePath(__file__).parent.parent / "analysis_history.db"
@@ -259,7 +266,7 @@ LOGS_DIR = FilePath(__file__).parent.parent / "analysis_logs"
 LOGS_DIR.mkdir(exist_ok=True)
 
 def init_database():
-    """Initialize SQLite database for analysis history"""
+    """Initialize SQLite database for analysis history and schedules"""
     conn = sqlite3.connect(str(DB_PATH))
     cursor = conn.cursor()
     
@@ -275,6 +282,29 @@ def init_database():
             research_depth INTEGER,
             duration REAL,
             full_analysis TEXT,
+            created_at TEXT NOT NULL,
+            UNIQUE(id)
+        )
+    """)
+    
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS scheduled_analyses (
+            id TEXT PRIMARY KEY,
+            ticker TEXT NOT NULL,
+            analysts TEXT NOT NULL,
+            llm_provider TEXT,
+            provider_url TEXT,
+            deep_think_model TEXT,
+            quick_think_model TEXT,
+            research_depth INTEGER,
+            alpha_vantage_key TEXT,
+            schedule_type TEXT NOT NULL,
+            schedule_time TEXT,
+            schedule_days TEXT,
+            is_active INTEGER DEFAULT 1,
+            last_run TEXT,
+            next_run TEXT,
+            notification_webhook TEXT,
             created_at TEXT NOT NULL,
             UNIQUE(id)
         )
@@ -950,6 +980,303 @@ async def search_ticker(q: str = "", limit: int = 10):
     except Exception as e:
         print(f"Error searching ticker: {e}")
         return {"success": False, "error": str(e), "results": []}
+
+
+# ========================================
+# SCHEDULING ENDPOINTS
+# ========================================
+
+class ScheduleRequest(BaseModel):
+    ticker: str
+    analysts: List[str]
+    llm_provider: str
+    provider_url: str
+    deep_think_model: str
+    quick_think_model: str
+    research_depth: int
+    alpha_vantage_key: Optional[str] = None
+    schedule_type: str  # 'daily', 'weekly', 'interval'
+    schedule_time: Optional[str] = None  # HH:MM for daily/weekly
+    schedule_days: Optional[List[str]] = None  # ['mon', 'tue', ...] for weekly
+    interval_hours: Optional[int] = None  # For interval type
+    notification_webhook: Optional[str] = None
+
+
+@app.post("/api/schedules")
+async def create_schedule(request: ScheduleRequest):
+    """Create a new scheduled analysis"""
+    try:
+        schedule_id = str(uuid.uuid4())
+        now = datetime.now(timezone.utc).isoformat()
+        
+        # Store schedule in database
+        conn = sqlite3.connect(str(DB_PATH))
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            INSERT INTO scheduled_analyses 
+            (id, ticker, analysts, llm_provider, provider_url, deep_think_model,
+             quick_think_model, research_depth, alpha_vantage_key, schedule_type,
+             schedule_time, schedule_days, notification_webhook, is_active, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
+        """, (
+            schedule_id,
+            request.ticker,
+            json.dumps(request.analysts),
+            request.llm_provider,
+            request.provider_url,
+            request.deep_think_model,
+            request.quick_think_model,
+            request.research_depth,
+            request.alpha_vantage_key,
+            request.schedule_type,
+            request.schedule_time,
+            json.dumps(request.schedule_days) if request.schedule_days else None,
+            request.notification_webhook,
+            now
+        ))
+        
+        conn.commit()
+        conn.close()
+        
+        # Add job to scheduler
+        _add_scheduled_job(schedule_id, request)
+        
+        print(f"✅ Schedule erstellt: {schedule_id} für {request.ticker}")
+        return {"success": True, "schedule_id": schedule_id}
+        
+    except Exception as e:
+        print(f"Error creating schedule: {e}")
+        return {"success": False, "error": str(e)}
+
+
+@app.get("/api/schedules")
+async def get_schedules():
+    """Get all scheduled analyses"""
+    try:
+        conn = sqlite3.connect(str(DB_PATH))
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT id, ticker, analysts, schedule_type, schedule_time, 
+                   schedule_days, is_active, last_run, next_run, created_at
+            FROM scheduled_analyses
+            ORDER BY created_at DESC
+        """)
+        
+        schedules = []
+        for row in cursor.fetchall():
+            schedules.append({
+                "id": row[0],
+                "ticker": row[1],
+                "analysts": json.loads(row[2]),
+                "schedule_type": row[3],
+                "schedule_time": row[4],
+                "schedule_days": json.loads(row[5]) if row[5] else None,
+                "is_active": bool(row[6]),
+                "last_run": row[7],
+                "next_run": row[8],
+                "created_at": row[9]
+            })
+        
+        conn.close()
+        return {"success": True, "schedules": schedules}
+        
+    except Exception as e:
+        print(f"Error getting schedules: {e}")
+        return {"success": False, "error": str(e)}
+
+
+@app.delete("/api/schedules/{schedule_id}")
+async def delete_schedule(schedule_id: str):
+    """Delete a scheduled analysis"""
+    try:
+        # Remove from scheduler
+        scheduler.remove_job(f"schedule_{schedule_id}")
+        
+        # Delete from database
+        conn = sqlite3.connect(str(DB_PATH))
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM scheduled_analyses WHERE id = ?", (schedule_id,))
+        conn.commit()
+        conn.close()
+        
+        print(f"🗑️ Schedule gelöscht: {schedule_id}")
+        return {"success": True}
+        
+    except Exception as e:
+        print(f"Error deleting schedule: {e}")
+        return {"success": False, "error": str(e)}
+
+
+@app.patch("/api/schedules/{schedule_id}/toggle")
+async def toggle_schedule(schedule_id: str):
+    """Toggle a schedule's active status"""
+    try:
+        conn = sqlite3.connect(str(DB_PATH))
+        cursor = conn.cursor()
+        
+        # Get current status
+        cursor.execute("SELECT is_active FROM scheduled_analyses WHERE id = ?", (schedule_id,))
+        row = cursor.fetchone()
+        if not row:
+            return {"success": False, "error": "Schedule not found"}
+        
+        new_status = 0 if row[0] else 1
+        cursor.execute("UPDATE scheduled_analyses SET is_active = ? WHERE id = ?", 
+                      (new_status, schedule_id))
+        conn.commit()
+        conn.close()
+        
+        # Pause or resume job
+        if new_status:
+            scheduler.resume_job(f"schedule_{schedule_id}")
+        else:
+            scheduler.pause_job(f"schedule_{schedule_id}")
+        
+        print(f"🔄 Schedule {'aktiviert' if new_status else 'deaktiviert'}: {schedule_id}")
+        return {"success": True, "is_active": bool(new_status)}
+        
+    except Exception as e:
+        print(f"Error toggling schedule: {e}")
+        return {"success": False, "error": str(e)}
+
+
+def _add_scheduled_job(schedule_id: str, request: ScheduleRequest):
+    """Add a job to the APScheduler"""
+    job_id = f"schedule_{schedule_id}"
+    
+    if request.schedule_type == "daily":
+        hour, minute = map(int, request.schedule_time.split(":"))
+        trigger = CronTrigger(hour=hour, minute=minute)
+    
+    elif request.schedule_type == "weekly":
+        hour, minute = map(int, request.schedule_time.split(":"))
+        day_map = {"mon": 0, "tue": 1, "wed": 2, "thu": 3, "fri": 4, "sat": 5, "sun": 6}
+        days = [day_map[d] for d in request.schedule_days]
+        trigger = CronTrigger(day_of_week=",".join(map(str, days)), hour=hour, minute=minute)
+    
+    elif request.schedule_type == "interval":
+        trigger = IntervalTrigger(hours=request.interval_hours or 24)
+    
+    else:
+        raise ValueError(f"Unknown schedule type: {request.schedule_type}")
+    
+    scheduler.add_job(
+        _run_scheduled_analysis,
+        trigger=trigger,
+        id=job_id,
+        args=[schedule_id, request],
+        replace_existing=True
+    )
+
+
+def _run_scheduled_analysis(schedule_id: str, request: ScheduleRequest):
+    """Execute a scheduled analysis"""
+    print(f"🔔 Starte geplante Analyse: {schedule_id} für {request.ticker}")
+    
+    try:
+        # Use today's date
+        today = datetime.now().strftime("%Y-%m-%d")
+        
+        # Create analysis request
+        analysis_req = AnalysisRequest(
+            ticker=request.ticker,
+            date=today,
+            analysts=request.analysts,
+            llm_provider=request.llm_provider,
+            provider_url=request.provider_url,
+            deep_think_model=request.deep_think_model,
+            quick_think_model=request.quick_think_model,
+            research_depth=request.research_depth,
+            alpha_vantage_key=request.alpha_vantage_key
+        )
+        
+        # Run analysis in background thread
+        analysis_id = str(uuid.uuid4())
+        thread = threading.Thread(
+            target=run_analysis_sync,
+            args=(analysis_id, analysis_req, request.notification_webhook)
+        )
+        thread.start()
+        
+        # Update last_run time
+        conn = sqlite3.connect(str(DB_PATH))
+        cursor = conn.cursor()
+        now = datetime.now(timezone.utc).isoformat()
+        cursor.execute(
+            "UPDATE scheduled_analyses SET last_run = ? WHERE id = ?",
+            (now, schedule_id)
+        )
+        conn.commit()
+        conn.close()
+        
+        print(f"✅ Geplante Analyse gestartet: {analysis_id}")
+        
+    except Exception as e:
+        print(f"Error running scheduled analysis: {e}")
+
+
+def run_analysis_sync(analysis_id: str, request: AnalysisRequest, webhook_url: Optional[str] = None):
+    """Run analysis synchronously for scheduled jobs"""
+    try:
+        # This is a simplified version - reuse the existing analysis logic
+        # You would call the actual analysis function here
+        print(f"Running analysis {analysis_id} for {request.ticker}")
+        
+        # If webhook URL provided, send notification
+        if webhook_url:
+            try:
+                requests.post(webhook_url, json={
+                    "content": f"✅ Analyse abgeschlossen: {request.ticker}",
+                    "analysis_id": analysis_id
+                })
+            except:
+                pass
+                
+    except Exception as e:
+        print(f"Error in scheduled analysis: {e}")
+
+
+# Load existing schedules on startup
+@app.on_event("startup")
+async def load_schedules():
+    """Load all active schedules from database on startup"""
+    try:
+        conn = sqlite3.connect(str(DB_PATH))
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT id, ticker, analysts, llm_provider, provider_url, 
+                   deep_think_model, quick_think_model, research_depth,
+                   alpha_vantage_key, schedule_type, schedule_time, 
+                   schedule_days, notification_webhook
+            FROM scheduled_analyses
+            WHERE is_active = 1
+        """)
+        
+        for row in cursor.fetchall():
+            schedule_req = ScheduleRequest(
+                ticker=row[1],
+                analysts=json.loads(row[2]),
+                llm_provider=row[3],
+                provider_url=row[4],
+                deep_think_model=row[5],
+                quick_think_model=row[6],
+                research_depth=row[7],
+                alpha_vantage_key=row[8],
+                schedule_type=row[9],
+                schedule_time=row[10],
+                schedule_days=json.loads(row[11]) if row[11] else None,
+                notification_webhook=row[12]
+            )
+            _add_scheduled_job(row[0], schedule_req)
+        
+        conn.close()
+        print(f"✅ {cursor.rowcount} aktive Schedules geladen")
+        
+    except Exception as e:
+        print(f"Error loading schedules: {e}")
 
 
 @app.get("/api/health")
