@@ -1343,6 +1343,72 @@ async def get_ticker_quote(symbol: str):
         return {"error": str(e)}
 
 
+@app.get("/api/ticker/fundamentals/{symbol}")
+async def get_ticker_fundamentals(symbol: str):
+    """Get fundamental data from Yahoo Finance"""
+    try:
+        import yfinance as yf
+        ticker = yf.Ticker(symbol.upper())
+        info = ticker.info
+        
+        return {
+            "symbol": symbol.upper(),
+            "marketCap": info.get('marketCap', 0),
+            "fiftyTwoWeekHigh": info.get('fiftyTwoWeekHigh', 0),
+            "fiftyTwoWeekLow": info.get('fiftyTwoWeekLow', 0),
+            "trailingPE": info.get('trailingPE'),
+            "forwardPE": info.get('forwardPE'),
+            "dividendYield": info.get('dividendYield'),
+            "trailingEps": info.get('trailingEps'),
+            "beta": info.get('beta'),
+            "currency": info.get('currency', 'USD')
+        }
+    except Exception as e:
+        print(f"❌ Error fetching fundamentals for {symbol}: {e}")
+        return {"error": str(e), "symbol": symbol.upper()}
+
+
+@app.get("/api/ticker/earnings/{symbol}")
+async def get_ticker_earnings(symbol: str):
+    """Get earnings calendar data from Yahoo Finance"""
+    try:
+        import yfinance as yf
+        from datetime import datetime
+        ticker = yf.Ticker(symbol.upper())
+        
+        # Get earnings calendar
+        calendar = ticker.calendar
+        
+        if calendar is None or calendar.empty:
+            return {"symbol": symbol.upper(), "earningsDate": None, "error": "No earnings data available"}
+        
+        # Extract earnings date
+        earnings_dates = calendar.get('Earnings Date', [])
+        earnings_date = None
+        
+        if earnings_dates and len(earnings_dates) > 0:
+            # Get the first (next) earnings date
+            next_date = earnings_dates[0]
+            if hasattr(next_date, 'strftime'):
+                earnings_date = next_date.strftime('%Y-%m-%d')
+            else:
+                earnings_date = str(next_date)
+        
+        return {
+            "symbol": symbol.upper(),
+            "earningsDate": earnings_date,
+            "earningsHigh": calendar.get('Earnings High'),
+            "earningsLow": calendar.get('Earnings Low'),
+            "earningsAverage": calendar.get('Earnings Average'),
+            "revenueHigh": calendar.get('Revenue High'),
+            "revenueLow": calendar.get('Revenue Low'),
+            "revenueAverage": calendar.get('Revenue Average')
+        }
+    except Exception as e:
+        print(f"❌ Error fetching earnings for {symbol}: {e}")
+        return {"error": str(e), "symbol": symbol.upper(), "earningsDate": None}
+
+
 @app.get("/api/ticker/history/{symbol}")
 async def get_ticker_history(symbol: str, period: str = "1y"):
     """Get historical price data from Yahoo Finance"""

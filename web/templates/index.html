@@ -5346,57 +5346,18 @@
         let overviewChartData = null;
         
         // Cache Management (only for Alpha Vantage data with rate limits)
-        const CACHE_DURATIONS = {
-            fundamentals: 24 * 60 * 60 * 1000,  // 24 hours - Alpha Vantage OVERVIEW
-            earnings: 7 * 24 * 60 * 60 * 1000   // 7 days - Alpha Vantage EARNINGS
-        };
-        
+        // Cache removed - Yahoo Finance has no rate limits
+        // Only used for tracking (no actual caching anymore)
         let apiCallsSaved = 0;
         let totalApiCalls = 0;
         
+        // Cache functions removed - Yahoo Finance has no rate limits
         function getCachedData(key) {
-            const cached = localStorage.getItem(`cache_${key}`);
-            if (!cached) return null;
-            
-            try {
-                const { data, timestamp } = JSON.parse(cached);
-                const age = Date.now() - timestamp;
-                
-                // Determine cache duration based on key type
-                let maxAge = CACHE_DURATIONS.fundamentals;
-                if (key.includes('_fundamentals')) maxAge = CACHE_DURATIONS.fundamentals;
-                else if (key.includes('_earnings')) maxAge = CACHE_DURATIONS.earnings;
-                
-                if (age < maxAge) {
-                    const ageMinutes = Math.round(age / 60000);
-                    console.log(`✅ Cache HIT für ${key} (${ageMinutes} Min alt) - API Call gespart!`);
-                    apiCallsSaved++;
-                    totalApiCalls++;
-                    updateCacheInfo();
-                    return data;
-                } else {
-                    console.log(`⏰ Cache EXPIRED für ${key}`);
-                    localStorage.removeItem(`cache_${key}`);
-                }
-            } catch (e) {
-                console.error('Cache read error:', e);
-            }
-            return null;
+            return null; // No caching needed
         }
         
         function setCachedData(key, data) {
-            try {
-                const cached = {
-                    data: data,
-                    timestamp: Date.now()
-                };
-                localStorage.setItem(`cache_${key}`, JSON.stringify(cached));
-                totalApiCalls++;
-                updateCacheInfo();
-                console.log(`💾 Cached ${key}`);
-            } catch (e) {
-                console.error('Cache write error:', e);
-            }
+            // No caching needed
         }
         
         function updateCacheInfo() {
@@ -5567,37 +5528,15 @@
         async function fetchOverviewFundamentals() {
             if (!currentOverviewTicker) return;
             
-            // Alpha Vantage only supports US stocks (no suffix like .DE, .L, etc.)
-            if (currentOverviewTicker.includes('.')) {
-                console.log('⚠️ Skipping fundamentals - Alpha Vantage only supports US stocks');
-                return;
-            }
-            
-            // Check cache first
-            const cacheKey = `${currentOverviewTicker}_fundamentals`;
-            const cached = getCachedData(cacheKey);
-            
-            if (cached) {
-                displayFundamentals(cached);
-                return;
-            }
-            
             try {
-                const alphaKey = document.getElementById('alphaVantageKey').value;
-                if (!alphaKey) return;
+                console.log('🌐 API Call: Yahoo Finance Fundamentals');
                 
-                console.log('🌐 API Call: OVERVIEW (US stock)');
-                
-                const url = `https://www.alphavantage.co/query?function=OVERVIEW&symbol=${currentOverviewTicker}&apikey=${alphaKey}`;
-                const response = await fetch(url);
+                const response = await fetch(`/api/ticker/fundamentals/${currentOverviewTicker}`);
                 const data = await response.json();
                 
-                if (data && data.Symbol) {
-                    console.log('✅ Fundamentaldaten geladen');
-                    setCachedData(cacheKey, data);
+                if (data && !data.error) {
+                    console.log('✅ Fundamentaldaten geladen (Yahoo Finance)');
                     displayFundamentals(data);
-                } else if (data.Note) {
-                    console.warn('⚠️ API Limit erreicht:', data.Note);
                 } else {
                     console.warn('⚠️ Keine Fundamentaldaten verfügbar für', currentOverviewTicker);
                 }
@@ -5608,18 +5547,18 @@
         
         function displayFundamentals(data) {
             // Market Cap
-            const marketCap = parseInt(data.MarketCapitalization);
+            const marketCap = data.marketCap || 0;
             document.getElementById('overviewMarketCap').textContent = marketCap ? formatMarketCap(marketCap) : 'N/A';
             
             // 52 Week High/Low
-            document.getElementById('overview52WHigh').textContent = data['52WeekHigh'] || 'N/A';
-            document.getElementById('overview52WLow').textContent = data['52WeekLow'] || 'N/A';
+            document.getElementById('overview52WHigh').textContent = data.fiftyTwoWeekHigh ? data.fiftyTwoWeekHigh.toFixed(2) : 'N/A';
+            document.getElementById('overview52WLow').textContent = data.fiftyTwoWeekLow ? data.fiftyTwoWeekLow.toFixed(2) : 'N/A';
             
             // Fundamentals
-            document.getElementById('overviewPE').textContent = data.PERatio || 'N/A';
-            document.getElementById('overviewDividend').textContent = data.DividendYield ? (parseFloat(data.DividendYield) * 100).toFixed(2) + '%' : 'N/A';
-            document.getElementById('overviewEPS').textContent = data.EPS || 'N/A';
-            document.getElementById('overviewBeta').textContent = data.Beta || 'N/A';
+            document.getElementById('overviewPE').textContent = data.trailingPE ? data.trailingPE.toFixed(2) : 'N/A';
+            document.getElementById('overviewDividend').textContent = data.dividendYield ? (data.dividendYield * 100).toFixed(2) + '%' : 'N/A';
+            document.getElementById('overviewEPS').textContent = data.trailingEps ? data.trailingEps.toFixed(2) : 'N/A';
+            document.getElementById('overviewBeta').textContent = data.beta ? data.beta.toFixed(2) : 'N/A';
         }
         
         async function updateOverviewChart(days) {
@@ -5901,37 +5840,15 @@
         async function fetchEarningsData() {
             if (!currentOverviewTicker) return;
             
-            // Alpha Vantage only supports US stocks (no suffix like .DE, .L, etc.)
-            if (currentOverviewTicker.includes('.')) {
-                console.log('⚠️ Skipping earnings - Alpha Vantage only supports US stocks');
-                const earningsCard = document.getElementById('earningsCard');
-                if (earningsCard) earningsCard.style.display = 'none';
-                return;
-            }
-            
-            // Check cache first
-            const cacheKey = `${currentOverviewTicker}_earnings`;
-            const cached = getCachedData(cacheKey);
-            
-            if (cached && cached.quarterlyEarnings) {
-                console.log('✅ Using cached earnings data');
-                displayEarnings(cached.quarterlyEarnings);
-                return;
-            }
-            
             try {
-                const alphaKey = document.getElementById('alphaVantageKey').value;
-                if (!alphaKey) return;
+                console.log('🌐 API Call: Yahoo Finance Earnings');
                 
-                console.log('🌐 API Call: EARNINGS (US stock)');
-                
-                const response = await fetch(`https://www.alphavantage.co/query?function=EARNINGS&symbol=${currentOverviewTicker}&apikey=${alphaKey}`);
+                const response = await fetch(`/api/ticker/earnings/${currentOverviewTicker}`);
                 const data = await response.json();
                 
-                if (data && data.quarterlyEarnings && data.quarterlyEarnings.length > 0) {
-                    // Cache earnings data
-                    setCachedData(cacheKey, data);
-                    displayEarnings(data.quarterlyEarnings);
+                if (data && data.earningsDate && !data.error) {
+                    console.log('✅ Earnings geladen (Yahoo Finance)');
+                    displayEarnings(data);
                 } else {
                     // Hide earnings card if no data
                     const earningsCard = document.getElementById('earningsCard');
@@ -5945,23 +5862,31 @@
             }
         }
         
-        function displayEarnings(earnings) {
+        function displayEarnings(data) {
             // Show earnings card
             const earningsCard = document.getElementById('earningsCard');
             if (earningsCard) earningsCard.style.display = 'block';
             
-            // Find next earnings (future date)
-            const today = new Date();
-            const nextEarning = earnings.find(e => new Date(e.reportedDate) > today);
-            
-            if (nextEarning) {
-                displayNextEarnings(nextEarning);
+            // Display next earnings date
+            if (data.earningsDate) {
+                const earningsDateEl = document.getElementById('nextEarningsDate');
+                const earningsTimeEl = document.getElementById('nextEarningsTime');
+                
+                const date = new Date(data.earningsDate);
+                if (earningsDateEl) earningsDateEl.textContent = date.toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' });
+                if (earningsTimeEl) earningsTimeEl.textContent = 'Nach Handelsschluss';
+                
+                // Show estimates if available
+                const estimateEl = document.getElementById('nextEarningsEstimate');
+                if (estimateEl && data.earningsAverage) {
+                    estimateEl.textContent = `EPS Schätzung: $${data.earningsAverage.toFixed(2)}`;
+                }
             } else {
-                // If no future earnings, show most recent
                 displayNoUpcomingEarnings();
             }
             
-            // Display last 4 earnings
+            // Note: Yahoo Finance doesn't provide historical quarterly earnings in calendar
+            // Hide the historical earnings section
             displayEarningsHistory(earnings.slice(0, 4));
         }
         
