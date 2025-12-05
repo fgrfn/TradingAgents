@@ -5666,7 +5666,7 @@
             console.log(`✅ ${dates.length} Datenpunkte angezeigt (Period: ${days} Tage)`);
             console.log('📈 Preisspanne:', Math.min(...prices).toFixed(2), '-', Math.max(...prices).toFixed(2));
             
-            overviewChartData = { dates, prices, fullHistory: historyData };
+            overviewChartData = { dates, prices, fullHistory: historyData, days };
             renderOverviewChart();
             
             // Update chart info
@@ -5709,11 +5709,49 @@
             const lineColor = isPositive ? '#10b981' : '#ef4444';
             const gradientColor = isPositive ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)';
             
+            // Determine date format based on time range
+            const days = overviewChartData.days || 365;
+            let labels;
+            
+            if (days <= 1) {
+                // 1 day: show time (e.g., "09:30", "14:15")
+                labels = dates.map(date => {
+                    const d = new Date(date);
+                    return d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+                });
+            } else if (days <= 7) {
+                // 5-7 days: show day + month (e.g., "7. Dez")
+                labels = dates.map(date => 
+                    new Date(date).toLocaleDateString('de-DE', { day: 'numeric', month: 'short' })
+                );
+            } else if (days <= 90) {
+                // 1-3 months: show day + month (e.g., "7. Dez")
+                labels = dates.map(date => 
+                    new Date(date).toLocaleDateString('de-DE', { day: 'numeric', month: 'short' })
+                );
+            } else if (days <= 365) {
+                // 6 months - 1 year: show month + year (e.g., "Dez 24")
+                labels = dates.map(date => {
+                    const d = new Date(date);
+                    const month = d.toLocaleDateString('de-DE', { month: 'short' });
+                    const year = d.getFullYear().toString().slice(-2);
+                    return `${month} ${year}`;
+                });
+            } else {
+                // 2+ years: show month + year (e.g., "Dez '24")
+                labels = dates.map(date => {
+                    const d = new Date(date);
+                    const month = d.toLocaleDateString('de-DE', { month: 'short' });
+                    const year = d.getFullYear().toString().slice(-2);
+                    return `${month} '${year}`;
+                });
+            }
+            
             // Create Chart.js instance
             overviewChartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: dates.map(date => new Date(date).toLocaleDateString('de-DE', { day: 'numeric', month: 'short' })),
+                    labels: labels,
                     datasets: [{
                         label: 'Preis',
                         data: prices,
