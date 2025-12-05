@@ -5450,53 +5450,99 @@
             const minPrice = Math.min(...prices);
             const maxPrice = Math.max(...prices);
             const priceRange = maxPrice - minPrice || 1;
+            const priceChange = prices[prices.length - 1] - prices[0];
+            const isPositive = priceChange >= 0;
             
             // Chart area with padding for labels
-            const padding = { left: 60, right: 20, top: 20, bottom: 30 };
+            const padding = { left: 70, right: 20, top: 30, bottom: 40 };
             const chartWidth = width - padding.left - padding.right;
             const chartHeight = height - padding.top - padding.bottom;
             
             // Determine if dark mode
             const isDarkMode = document.body.classList.contains('dark-mode');
-            const textColor = isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)';
-            const gridColor = isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+            const textColor = isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(51, 65, 85, 0.9)';
+            const gridColor = isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)';
             
-            // Draw grid and Y-axis labels
+            // Modern color scheme based on trend
+            const lineColor = isPositive 
+                ? (isDarkMode ? '#10b981' : '#059669')  // Green for positive
+                : (isDarkMode ? '#ef4444' : '#dc2626'); // Red for negative
+            
+            // Draw subtle grid with horizontal lines only
             ctx.strokeStyle = gridColor;
             ctx.lineWidth = 1;
-            ctx.fillStyle = textColor;
-            ctx.font = '12px sans-serif';
-            ctx.textAlign = 'right';
             
             for (let i = 0; i <= 4; i++) {
                 const y = padding.top + (i / 4) * chartHeight;
-                const price = maxPrice - (i / 4) * priceRange;
-                
-                // Draw grid line
                 ctx.beginPath();
                 ctx.moveTo(padding.left, y);
                 ctx.lineTo(width - padding.right, y);
                 ctx.stroke();
-                
-                // Draw Y-axis label
-                ctx.fillText(price.toFixed(2), padding.left - 10, y + 4);
             }
             
-            // Draw X-axis labels (dates)
+            // Draw Y-axis labels with better styling
+            ctx.fillStyle = textColor;
+            ctx.font = 'bold 13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            
+            for (let i = 0; i <= 4; i++) {
+                const y = padding.top + (i / 4) * chartHeight;
+                const price = maxPrice - (i / 4) * priceRange;
+                ctx.fillText(price.toFixed(2), padding.left - 15, y);
+            }
+            
+            // Draw X-axis labels with better formatting
             const dates = overviewChartData.dates;
             ctx.textAlign = 'center';
-            const labelInterval = Math.ceil(dates.length / 6); // Show ~6 labels
+            ctx.textBaseline = 'top';
+            ctx.font = '12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+            
+            const labelInterval = Math.max(1, Math.ceil(dates.length / 6));
             
             for (let i = 0; i < dates.length; i += labelInterval) {
                 const x = padding.left + (i / (prices.length - 1)) * chartWidth;
                 const date = new Date(dates[i]);
-                const label = date.toLocaleDateString('de-DE', { month: 'short', day: 'numeric' });
-                ctx.fillText(label, x, height - padding.bottom + 20);
+                const label = date.toLocaleDateString('de-DE', { day: 'numeric', month: 'short' });
+                ctx.fillText(label, x, height - padding.bottom + 12);
             }
             
-            // Draw price line
-            ctx.strokeStyle = isDarkMode ? 'rgba(96, 165, 250, 0.9)' : 'rgba(59, 130, 246, 0.9)';
+            // Create gradient fill
+            const gradient = ctx.createLinearGradient(0, padding.top, 0, height - padding.bottom);
+            if (isPositive) {
+                gradient.addColorStop(0, isDarkMode ? 'rgba(16, 185, 129, 0.3)' : 'rgba(5, 150, 105, 0.25)');
+                gradient.addColorStop(1, isDarkMode ? 'rgba(16, 185, 129, 0.02)' : 'rgba(5, 150, 105, 0.02)');
+            } else {
+                gradient.addColorStop(0, isDarkMode ? 'rgba(239, 68, 68, 0.3)' : 'rgba(220, 38, 38, 0.25)');
+                gradient.addColorStop(1, isDarkMode ? 'rgba(239, 68, 68, 0.02)' : 'rgba(220, 38, 38, 0.02)');
+            }
+            
+            // Draw filled area first
+            ctx.beginPath();
+            ctx.moveTo(padding.left, padding.top + chartHeight);
+            
+            prices.forEach((price, index) => {
+                const x = padding.left + (index / (prices.length - 1)) * chartWidth;
+                const y = padding.top + chartHeight - ((price - minPrice) / priceRange) * chartHeight;
+                ctx.lineTo(x, y);
+            });
+            
+            ctx.lineTo(padding.left + chartWidth, padding.top + chartHeight);
+            ctx.closePath();
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            
+            // Draw smooth line with shadow
+            ctx.shadowColor = isPositive 
+                ? (isDarkMode ? 'rgba(16, 185, 129, 0.5)' : 'rgba(5, 150, 105, 0.4)')
+                : (isDarkMode ? 'rgba(239, 68, 68, 0.5)' : 'rgba(220, 38, 38, 0.4)');
+            ctx.shadowBlur = 8;
+            ctx.shadowOffsetY = 2;
+            
+            ctx.strokeStyle = lineColor;
             ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
             ctx.beginPath();
             
             prices.forEach((price, index) => {
@@ -5511,12 +5557,56 @@
             });
             
             ctx.stroke();
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetY = 0;
             
-            // Fill area under line
-            ctx.lineTo(padding.left + chartWidth, padding.top + chartHeight);
-            ctx.lineTo(padding.left, padding.top + chartHeight);
-            ctx.closePath();
-            ctx.fillStyle = isDarkMode ? 'rgba(96, 165, 250, 0.15)' : 'rgba(59, 130, 246, 0.15)';
+            // Draw start and end points with glow
+            const drawPoint = (x, y, isEnd = false) => {
+                // Outer glow
+                ctx.beginPath();
+                ctx.arc(x, y, 8, 0, Math.PI * 2);
+                ctx.fillStyle = isPositive 
+                    ? (isDarkMode ? 'rgba(16, 185, 129, 0.2)' : 'rgba(5, 150, 105, 0.2)')
+                    : (isDarkMode ? 'rgba(239, 68, 68, 0.2)' : 'rgba(220, 38, 38, 0.2)');
+                ctx.fill();
+                
+                // Main point
+                ctx.beginPath();
+                ctx.arc(x, y, 4, 0, Math.PI * 2);
+                ctx.fillStyle = lineColor;
+                ctx.fill();
+                
+                // White center
+                ctx.beginPath();
+                ctx.arc(x, y, 2, 0, Math.PI * 2);
+                ctx.fillStyle = isDarkMode ? '#1f2937' : '#ffffff';
+                ctx.fill();
+            };
+            
+            // Draw first point
+            const firstX = padding.left;
+            const firstY = padding.top + chartHeight - ((prices[0] - minPrice) / priceRange) * chartHeight;
+            drawPoint(firstX, firstY);
+            
+            // Draw last point with larger size
+            const lastX = padding.left + chartWidth;
+            const lastY = padding.top + chartHeight - ((prices[prices.length - 1] - minPrice) / priceRange) * chartHeight;
+            
+            ctx.beginPath();
+            ctx.arc(lastX, lastY, 10, 0, Math.PI * 2);
+            ctx.fillStyle = isPositive 
+                ? (isDarkMode ? 'rgba(16, 185, 129, 0.25)' : 'rgba(5, 150, 105, 0.25)')
+                : (isDarkMode ? 'rgba(239, 68, 68, 0.25)' : 'rgba(220, 38, 38, 0.25)');
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.arc(lastX, lastY, 5, 0, Math.PI * 2);
+            ctx.fillStyle = lineColor;
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.arc(lastX, lastY, 2.5, 0, Math.PI * 2);
+            ctx.fillStyle = isDarkMode ? '#1f2937' : '#ffffff';
             ctx.fill();
             
             console.log('✅ Chart erfolgreich gerendert');

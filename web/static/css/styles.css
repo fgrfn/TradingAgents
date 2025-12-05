@@ -632,42 +632,81 @@ body.dark-mode .overview-card {
 }
 
 .overview-period-btn {
-    padding: 0.5rem 1rem;
-    background: var(--light-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
+    padding: 0.6rem 1.2rem;
+    background: transparent;
+    border: 2px solid transparent;
+    border-radius: 8px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     font-weight: 600;
-    color: var(--text-primary);
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    position: relative;
 }
 
 .overview-period-btn:hover {
-    background: var(--primary-color);
-    color: white;
-    border-color: var(--primary-color);
+    background: var(--light-bg);
+    color: var(--text-primary);
+    transform: translateY(-1px);
 }
 
 .overview-period-btn.active {
     background: var(--primary-color);
     color: white;
     border-color: var(--primary-color);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+body.dark-mode .overview-period-btn.active {
+    box-shadow: 0 4px 12px rgba(96, 165, 250, 0.4);
 }
 
 .overview-chart-container {
-    background: rgba(0, 0, 0, 0.1);
-    border-radius: 8px;
-    padding: 1rem;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.03), rgba(139, 92, 246, 0.02));
+    border-radius: 12px;
+    padding: 1.5rem;
     margin-bottom: 1rem;
+    border: 1px solid rgba(59, 130, 246, 0.1);
+    position: relative;
+    overflow: hidden;
 }
 
 body.dark-mode .overview-chart-container {
-    background: rgba(255, 255, 255, 0.05);
+    background: linear-gradient(135deg, rgba(96, 165, 250, 0.05), rgba(167, 139, 250, 0.03));
+    border: 1px solid rgba(96, 165, 250, 0.15);
+}
+
+.overview-chart-container::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.05) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+body.dark-mode .overview-chart-container::before {
+    background: radial-gradient(circle, rgba(96, 165, 250, 0.08) 0%, transparent 70%);
 }
 
 .overview-chart-container canvas {
     width: 100% !important;
     height: auto !important;
+    display: block;
+    animation: fadeInChart 0.5s ease-out;
+}
+
+@keyframes fadeInChart {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .overview-chart-info {
