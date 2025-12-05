@@ -5833,48 +5833,43 @@
             
             console.log('✅ Chart erfolgreich gerendert');
             
-            // Add hover interaction
-            setupChartHover(canvas, { padding, chartWidth, chartHeight, minPrice, maxPrice, priceRange, prices, dates: overviewChartData.dates, isDarkMode, lineColor, isPositive });
+            // Add hover interaction (only once)
+            if (!canvas.hasHoverListener) {
+                setupChartHover(canvas);
+                canvas.hasHoverListener = true;
+            }
         }
         
-        function setupChartHover(canvas, chartData) {
-            const { padding, chartWidth, chartHeight, minPrice, maxPrice, priceRange, prices, dates, isDarkMode, lineColor, isPositive } = chartData;
-            
-            // Remove old event listeners
-            const oldCanvas = canvas.cloneNode(true);
-            canvas.parentNode.replaceChild(oldCanvas, canvas);
-            const ctx = oldCanvas.getContext('2d');
-            
+        function setupChartHover(canvas) {
             let tooltip = document.getElementById('chartTooltip');
             if (!tooltip) {
                 tooltip = document.createElement('div');
                 tooltip.id = 'chartTooltip';
-                tooltip.style.cssText = `
-                    position: absolute;
-                    display: none;
-                    background: ${isDarkMode ? 'rgba(31, 41, 55, 0.95)' : 'rgba(255, 255, 255, 0.95)'};
-                    border: 1px solid ${isDarkMode ? 'rgba(75, 85, 99, 0.5)' : 'rgba(226, 232, 240, 0.8)'};
-                    border-radius: 8px;
-                    padding: 8px 12px;
-                    font-size: 12px;
-                    font-weight: 600;
-                    pointer-events: none;
-                    z-index: 1000;
-                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-                    backdrop-filter: blur(8px);
-                `;
                 document.body.appendChild(tooltip);
             }
             
-            oldCanvas.addEventListener('mousemove', (e) => {
-                const rect = oldCanvas.getBoundingClientRect();
+            canvas.addEventListener('mousemove', (e) => {
+                if (!overviewChartData) return;
+                
+                const rect = canvas.getBoundingClientRect();
                 const x = e.clientX - rect.left;
                 const y = e.clientY - rect.top;
+                
+                const { prices, dates } = overviewChartData;
+                const ctx = canvas.getContext('2d');
+                const width = canvas.width;
+                const height = canvas.height;
+                
+                const minPrice = Math.min(...prices);
+                const maxPrice = Math.max(...prices);
+                const priceRange = maxPrice - minPrice || 1;
+                const padding = { left: 60, right: 15, top: 20, bottom: 35 };
+                const chartWidth = width - padding.left - padding.right;
+                const chartHeight = height - padding.top - padding.bottom;
                 
                 // Check if within chart area
                 if (x < padding.left || x > padding.left + chartWidth || y < padding.top || y > padding.top + chartHeight) {
                     tooltip.style.display = 'none';
-                    renderOverviewChart();
                     return;
                 }
                 
@@ -5888,13 +5883,18 @@
                     const pointX = padding.left + (index / (prices.length - 1)) * chartWidth;
                     const pointY = padding.top + chartHeight - ((price - minPrice) / priceRange) * chartHeight;
                     
-                    // Redraw chart
+                    // Redraw base chart
                     renderOverviewChart();
                     
+                    const isDarkMode = document.body.classList.contains('dark-mode');
+                    const priceChange = prices[prices.length - 1] - prices[0];
+                    const isPositive = priceChange >= 0;
+                    const lineColor = isPositive ? '#10b981' : '#ef4444';
+                    
                     // Draw hover line
-                    ctx.strokeStyle = isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.15)';
+                    ctx.strokeStyle = isDarkMode ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)';
                     ctx.lineWidth = 1;
-                    ctx.setLineDash([4, 4]);
+                    ctx.setLineDash([3, 3]);
                     ctx.beginPath();
                     ctx.moveTo(pointX, padding.top);
                     ctx.lineTo(pointX, padding.top + chartHeight);
@@ -5903,41 +5903,48 @@
                     
                     // Draw hover point
                     ctx.beginPath();
-                    ctx.arc(pointX, pointY, 8, 0, Math.PI * 2);
-                    ctx.fillStyle = isPositive ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)';
+                    ctx.arc(pointX, pointY, 7, 0, Math.PI * 2);
+                    ctx.fillStyle = isPositive ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)';
                     ctx.fill();
                     
                     ctx.beginPath();
-                    ctx.arc(pointX, pointY, 5, 0, Math.PI * 2);
+                    ctx.arc(pointX, pointY, 4.5, 0, Math.PI * 2);
                     ctx.fillStyle = lineColor;
                     ctx.fill();
                     
                     ctx.beginPath();
-                    ctx.arc(pointX, pointY, 2.5, 0, Math.PI * 2);
+                    ctx.arc(pointX, pointY, 2, 0, Math.PI * 2);
                     ctx.fillStyle = isDarkMode ? '#1f2937' : '#ffffff';
                     ctx.fill();
                     
                     // Show tooltip
                     const dateStr = date.toLocaleDateString('de-DE', { day: 'numeric', month: 'short', year: 'numeric' });
-                    const timeStr = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+                    
+                    tooltip.style.cssText = `
+                        position: fixed;
+                        display: block;
+                        background: ${isDarkMode ? 'rgba(31, 41, 55, 0.95)' : 'rgba(255, 255, 255, 0.95)'};
+                        border: 1px solid ${isDarkMode ? 'rgba(75, 85, 99, 0.5)' : 'rgba(226, 232, 240, 0.8)'};
+                        border-radius: 8px;
+                        padding: 8px 12px;
+                        font-size: 12px;
+                        font-weight: 600;
+                        pointer-events: none;
+                        z-index: 10000;
+                        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                        backdrop-filter: blur(8px);
+                        left: ${e.clientX + 15}px;
+                        top: ${e.clientY - 40}px;
+                    `;
                     
                     tooltip.innerHTML = `
                         <div style="color: ${isDarkMode ? '#e5e7eb' : '#1f2937'}; margin-bottom: 4px;">${dateStr}</div>
                         <div style="color: ${lineColor}; font-size: 14px; font-weight: 700;">$${price.toFixed(2)}</div>
                     `;
-                    
-                    tooltip.style.display = 'block';
-                    tooltip.style.left = (e.clientX + 15) + 'px';
-                    tooltip.style.top = (e.clientY - 40) + 'px';
-                    
-                    // Update tooltip background based on current dark mode
-                    const currentIsDarkMode = document.body.classList.contains('dark-mode');
-                    tooltip.style.background = currentIsDarkMode ? 'rgba(31, 41, 55, 0.95)' : 'rgba(255, 255, 255, 0.95)';
-                    tooltip.style.borderColor = currentIsDarkMode ? 'rgba(75, 85, 99, 0.5)' : 'rgba(226, 232, 240, 0.8)';
                 }
             });
             
-            oldCanvas.addEventListener('mouseleave', () => {
+            canvas.addEventListener('mouseleave', () => {
                 tooltip.style.display = 'none';
                 renderOverviewChart();
             });
